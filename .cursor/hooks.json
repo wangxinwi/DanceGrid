@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      {
+        "command": "node \"/Users/vidawung/.cursor/skills/impeccable/scripts/hook-before-edit.mjs\"",
+        "timeout": 5
+      },
+      {
+        "command": "node \"/Users/vidawung/projects/DanceGrid/.hooks/project-rules-hook.mjs\" pre",
+        "timeout": 5
+      }
+    ]
+  }
+}

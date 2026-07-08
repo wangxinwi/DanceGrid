@@ -1,0 +1,36 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|apply_patch|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"/Users/vidawung/projects/DanceGrid/.hooks/project-rules-hook.mjs\" pre",
+            "timeout": 5,
+            "statusMessage": "Checking project rules"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|apply_patch|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"/Users/vidawung/.agents/skills/impeccable/scripts/hook.mjs\"",
+            "timeout": 5,
+            "statusMessage": "Checking UI changes"
+          },
+          {
+            "type": "command",
+            "command": "node \"/Users/vidawung/projects/DanceGrid/.hooks/project-rules-hook.mjs\" post",
+            "timeout": 5,
+            "statusMessage": "Checking project rules"
+          }
+        ]
+      }
+    ]
+  }
+}
