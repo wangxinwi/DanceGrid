@@ -3,9 +3,11 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
+  CalendarDays,
+  CalendarRange,
+  Clock3,
   Home,
   ListFilter,
-  Search,
   Plus,
   Settings2,
 } from "lucide-react";
@@ -92,6 +94,18 @@ type TemplatePreset = {
   fee: string;
 };
 
+type CopyPreviewGroup = {
+  studio: string;
+  items: Array<{
+    weekday: string;
+    time: string;
+    title: string;
+    type: string;
+    repeat: string;
+    fee: string;
+  }>;
+};
+
 const weekdayLabels = ["M", "T", "W", "T", "F", "S", "S"];
 const weekdayLongLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const monthNames = [
@@ -109,6 +123,8 @@ const monthNames = [
   "December",
 ];
 const initialDate = new Date(2026, 6, 7);
+const clockHourOptions = Array.from({ length: 24 }, (_, index) => pad(index));
+const clockMinuteOptions = Array.from({ length: 12 }, (_, index) => pad(index * 5));
 
 const scheduleData: Record<MonthKey, ScheduleItem[]> = {
   "2026-06": [
@@ -385,8 +401,60 @@ function formatWeekLabel(date: Date) {
   return date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 }
 
-function getTemplateByTitle(title: string) {
-  return templates.find((template) => template.title === title);
+function parseClockTime(input?: string | null) {
+  const raw = input?.split("-")[0]?.trim() ?? "18:00";
+  const [hour = "18", minute = "00"] = raw.split(":");
+  return {
+    hour: clockHourOptions.includes(hour.padStart(2, "0")) ? hour.padStart(2, "0") : "18",
+    minute: clockMinuteOptions.includes(minute.padStart(2, "0")) ? minute.padStart(2, "0") : "00",
+  };
+}
+
+function addMinutes(time: string, minutes: number) {
+  const [hour = "18", minute = "00"] = time.split(":");
+  const total = Number(hour) * 60 + Number(minute) + minutes;
+  const normalized = ((total % (24 * 60)) + 24 * 60) % (24 * 60);
+  const nextHour = Math.floor(normalized / 60);
+  const nextMinute = normalized % 60;
+  return `${pad(nextHour)}:${pad(nextMinute)}`;
+}
+
+function parseTimeRange(input?: string | null) {
+  const [startRaw, endRaw] = (input ?? "").split("-").map((part) => part.trim());
+  const start = parseClockTime(startRaw || "18:00");
+  const startTime = `${start.hour}:${start.minute}`;
+  const end = parseClockTime(endRaw || addMinutes(startTime, 90));
+  return {
+    startHour: start.hour,
+    startMinute: start.minute,
+    endHour: end.hour,
+    endMinute: end.minute,
+  };
+}
+
+function groupTemplatesByStudio(source: TemplatePreset[] = templates) {
+  return source.reduce<CopyPreviewGroup[]>((groups, template) => {
+    const group = groups.find((item) => item.studio === template.studio);
+    const entry = {
+      weekday: template.weekday,
+      time: template.time,
+      title: template.type,
+      type: template.type,
+      repeat: `${template.repeatUnit === "week" ? "Weekly" : "Monthly"} · ${template.repeatEndMode === "count" ? template.repeatEndValue : `Until ${template.repeatEndValue}`}`,
+      fee: `¥${template.fee}`,
+    };
+
+    if (group) {
+      group.items.push(entry);
+    } else {
+      groups.push({
+        studio: template.studio,
+        items: [entry],
+      });
+    }
+
+    return groups;
+  }, []);
 }
 
 function useMonthState(activeMonthOffset: number, selectedDate: Date) {
@@ -460,7 +528,7 @@ function AppShell({ page, setPage, children }: { page: Page; setPage: (page: Pag
           {[
             ["home", "Home"],
             ["reconcile", "Reconcile"],
-            ["more", "More"],
+            ["more", "Settings"],
           ].map(([key, label]) => (
             <Button key={key} variant={page === key ? "default" : "outline"} size="sm" onClick={() => setPage(key as Page)} className="page-chip">
               {key === "more" ? <Settings2 size={14} /> : key === "reconcile" ? <ListFilter size={14} /> : <Home size={14} />}
@@ -477,14 +545,13 @@ function AppShell({ page, setPage, children }: { page: Page; setPage: (page: Pag
   );
 }
 
-function MobileFrame({ activeView, setActiveView, monthTitle, onPrevMonth, onNextMonth, onToday, onSearch, onAdd, page, setPage, children }: {
+function MobileFrame({ activeView, setActiveView, monthTitle, onPrevMonth, onNextMonth, onToday, onAdd, page, setPage, children }: {
   activeView: View;
   setActiveView: (view: View) => void;
   monthTitle: string;
   onPrevMonth: () => void;
   onNextMonth: () => void;
   onToday: () => void;
-  onSearch: () => void;
   onAdd: () => void;
   page: Page;
   setPage: (page: Page) => void;
@@ -519,67 +586,81 @@ function MobileFrame({ activeView, setActiveView, monthTitle, onPrevMonth, onNex
                   <Button variant="ghost" size="sm" className="toolbar-link today-link" onClick={onToday}>
                     Today
                   </Button>
-                  <Button variant="ghost" size="icon" className="toolbar-link icon-link" onClick={onSearch} aria-label="Search">
-                    <Search size={16} />
-                  </Button>
                 </div>
               </div>
 
               <Tabs value={activeView} onValueChange={(value) => setActiveView(value as View)}>
                 <TabsList className="segmented view-tabs" aria-label="Views">
-                  <TabsTrigger value="day">Day</TabsTrigger>
-                  <TabsTrigger value="week">Week</TabsTrigger>
-                  <TabsTrigger value="month">Month</TabsTrigger>
+                  <TabsTrigger value="day">
+                    <Clock3 size={13} strokeWidth={1.9} />
+                    Day
+                  </TabsTrigger>
+                  <TabsTrigger value="week">
+                    <CalendarRange size={13} strokeWidth={1.9} />
+                    Week
+                  </TabsTrigger>
+                  <TabsTrigger value="month">
+                    <CalendarDays size={13} strokeWidth={1.9} />
+                    Month
+                  </TabsTrigger>
                 </TabsList>
               </Tabs>
             </>
           ) : (
             <div className="page-topbar">
               <div>
-                <SectionLabel>{page === "reconcile" ? "Reconcile" : "More"}</SectionLabel>
+                <SectionLabel>{page === "reconcile" ? "Reconcile" : "Settings"}</SectionLabel>
                 <h2>{page === "reconcile" ? "Monthly fee review" : "Secondary tools"}</h2>
-              </div>
-              <div className="topbar-actions">
-                <Button variant="ghost" size="icon" className="toolbar-link icon-link" onClick={onSearch} aria-label="Search">
-                  <Search size={16} />
-                </Button>
               </div>
             </div>
           )}
         </div>
 
-        <main className="screen-main">{children}</main>
+        <div className="screen-body">
+          <main className="screen-main">{children}</main>
 
-        <div className="mobile-bottom-nav" role="tablist" aria-label="Primary">
-          {[
-            ["home", "Home", Home],
-            ["reconcile", "Reconcile", ListFilter],
-            ["more", "More", Settings2],
-          ].map(([key, label]) => (
-            <Button
-              key={key}
-              data-testid={`primary-${key}`}
-              variant={page === key ? "default" : "ghost"}
-              className={classNames("nav-item", page === key && "active")}
-              onClick={() => setPage(key as Page)}
-            >
-              <TabIcon name={key as "home" | "reconcile" | "more"} />
-              {label}
+          <div className="mobile-bottom-nav" role="tablist" aria-label="Primary">
+            {[
+              ["home", "Home", Home],
+              ["reconcile", "Reconcile", ListFilter],
+              ["more", "Settings", Settings2],
+            ].map(([key, label]) => (
+              <Button
+                key={key}
+                data-testid={`primary-${key}`}
+                variant={page === key ? "default" : "ghost"}
+                className={classNames("nav-item", page === key && "active")}
+                onClick={() => setPage(key as Page)}
+              >
+                <TabIcon name={key as "home" | "reconcile" | "more"} />
+                {label}
+              </Button>
+            ))}
+          </div>
+
+          {page === "home" && (
+            <Button type="button" className="fab" data-testid="add-class" onClick={onAdd} aria-label="Add class">
+              <Plus size={18} />
             </Button>
-          ))}
+          )}
         </div>
-
-        {page === "home" && (
-          <Button className="fab" data-testid="add-class" onClick={onAdd} aria-label="Add class">
-            <Plus size={18} />
-          </Button>
-        )}
       </div>
     </>
   );
 }
 
 function MonthView({ data, onSelectDate, onCopyLastMonth, onOpenDetail }: { data: ReturnType<typeof useMonthState>; onSelectDate: (date: Date) => void; onCopyLastMonth: () => void; onOpenDetail: () => void }) {
+  const selectedIsToday = data.selectedKey === formatDateKey(initialDate);
+  const selectedEvents = getEventsForDate(data.selectedKey);
+  const selectedItems = selectedEvents.map((event) => ({
+    time: event.time,
+    title: `${event.studio} · ${event.title}`,
+    meta: `${event.type} · ${event.status} · ${event.pay}`,
+    fee: event.type === "Workshop" ? "¥500" : event.type === "Private" ? "¥300" : "¥300",
+  }));
+  const selectedExpectedIncome = selectedEvents.reduce((sum, item) => sum + (item.type === "Workshop" ? 500 : item.type === "Private" ? 300 : 300), 0);
+  const selectedSessions = selectedEvents.length;
+
   return (
     <section className="view-panel active" data-panel="month">
       <div className="month-header">
@@ -603,18 +684,24 @@ function MonthView({ data, onSelectDate, onCopyLastMonth, onOpenDetail }: { data
           {data.gridDates.map((date) => {
             const dateKey = formatDateKey(date);
             const inMonth = date.getMonth() === data.monthDate.getMonth();
-            const matches = data.schedule.filter((item) => item.date === dateKey);
+            const classCount = getEventsForDate(dateKey).length;
             const isSelected = data.selectedKey === dateKey;
             const isToday = dateKey === formatDateKey(initialDate);
             return (
               <button
                 key={dateKey}
                 type="button"
-                className={classNames("day-cell", !inMonth && "muted", isWeekend(date) && "weekend", isSelected && "selected", isToday && "today")}
+                className={classNames(
+                  "day-cell",
+                  !inMonth && "muted",
+                  isWeekend(date) && "weekend",
+                  isSelected && "selected",
+                  isToday && "today",
+                )}
                 onClick={() => onSelectDate(date)}
               >
                 <span className="date-number">{date.getDate()}</span>
-                {matches.length > 0 ? <span className="day-cell-dot" aria-hidden="true" /> : null}
+                {inMonth && classCount > 0 ? <span className="day-count-badge">{classCount}</span> : null}
               </button>
             );
           })}
@@ -624,65 +711,50 @@ function MonthView({ data, onSelectDate, onCopyLastMonth, onOpenDetail }: { data
       <div className="summary-panel">
         <div className="section-head">
           <div>
-            <SectionLabel>Selected day</SectionLabel>
+            <SectionLabel>{selectedIsToday ? "今日待开课程" : "选中日期课表"}</SectionLabel>
             <h3>{data.selectedDate.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}</h3>
           </div>
-          <span className="text-button-like">{data.selectedItems.length} classes</span>
+          <span className="text-button-like">{selectedItems.length} classes</span>
         </div>
 
-        <div className="month-stats">
-          {data.monthMeta.summary.length > 0 ? (
-            <>
-              {data.monthMeta.summary.map((item) => (
-                <div key={item.label} className="stat-card">
-                  <span>{item.label}</span>
-                  <strong>{item.value}</strong>
-                </div>
-              ))}
-              {data.monthKey === "2026-06" && (
-                <div className="stat-card">
-                  <span>Historical fee total</span>
-                  <strong>¥{data.totalFee}</strong>
-                </div>
-              )}
-              {data.monthKey === "2026-07" && (
-                <div className="stat-card">
-                  <span>Received</span>
-                  <strong>¥{data.totalReceived}</strong>
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="empty-state">
-              <strong>No schedule yet</strong>
-              <p>{data.monthMeta.note}</p>
+        <div className="today-stack">
+          <div className="today-card">
+            <div className="today-card-head">
+              <strong>{selectedIsToday ? "今日待开课程" : "待开课程"}</strong>
+              <span>{selectedItems.length} classes</span>
             </div>
-          )}
-        </div>
 
-        <div className="agenda-list">
-          {data.monthKey === "2026-08" ? (
-            <div className="empty-state">
-              <strong>August 2026</strong>
-              <p>{data.monthMeta.note}</p>
+            {selectedItems.length > 0 ? (
+              <div className="today-list">
+                {selectedItems.map((item) => (
+                  <button className="agenda-row today-row" type="button" key={`${item.time}-${item.title}`} onClick={onOpenDetail}>
+                    <span className="agenda-time">{item.time}</span>
+                    <span className="agenda-main">
+                      <strong>{item.title}</strong>
+                      <small>{item.meta}</small>
+                    </span>
+                    <span className="agenda-meta">{item.fee}</span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="empty-state tight">
+                <strong>No classes today</strong>
+                <p>Today has no pending class yet.</p>
+              </div>
+            )}
+          </div>
+
+          <div className="today-card">
+            <div className="today-card-head">
+              <strong>{selectedIsToday ? "今日应该收入" : "本日应该收入"}</strong>
+              <span>{selectedIsToday ? "Today" : "Selected"}</span>
             </div>
-          ) : data.selectedItems.length > 0 ? (
-            data.selectedItems.map((item) => (
-              <button className="agenda-row" type="button" key={`${item.time}-${item.title}`} onClick={onOpenDetail}>
-                <span className="agenda-time">{item.time}</span>
-                <span className="agenda-main">
-                  <strong>{item.title}</strong>
-                  <small>{item.meta}</small>
-                </span>
-                <span className="agenda-meta">{item.fee}</span>
-              </button>
-            ))
-          ) : (
-            <div className="empty-state tight">
-              <strong>No classes on this day</strong>
-              <p>Open a date in Month view or add a class with the floating button.</p>
+            <div className="today-income">
+              <div className="today-income-amount">¥{selectedExpectedIncome}</div>
+              <p>{selectedItems.length > 0 ? `${selectedItems.length} classes · ${selectedSessions} sessions` : "No classes scheduled for this date"}</p>
             </div>
-          )}
+          </div>
         </div>
       </div>
     </section>
@@ -711,7 +783,13 @@ function EventBadge({ label, tone }: { label: string; tone: "success" | "warning
 
 function EventCard({ event, style, onOpenDetail }: { event: ScheduleEvent; style: CSSProperties; onOpenDetail: () => void }) {
   return (
-    <button className={classNames("schedule-event", event.weekend && "weekend")} type="button" style={style} onClick={onOpenDetail} aria-label={`Open ${event.title}`}>
+    <button
+      className={classNames("schedule-event", `schedule-event-${event.type.toLowerCase()}`, event.weekend && "weekend")}
+      type="button"
+      style={style}
+      onClick={onOpenDetail}
+      aria-label={`Open ${event.title}`}
+    >
       <span className="drag-grip" aria-hidden="true">
         <span />
         <span />
@@ -738,7 +816,13 @@ function EventCard({ event, style, onOpenDetail }: { event: ScheduleEvent; style
 
 function WeekAgendaCard({ event, onOpenDetail, style }: { event: ScheduleEvent; onOpenDetail: () => void; style?: CSSProperties }) {
   return (
-    <button className={classNames("week-mobile-event", event.weekend && "weekend")} type="button" style={style} onClick={onOpenDetail} aria-label={`Open ${event.title}`}>
+    <button
+      className={classNames("week-mobile-event", `week-mobile-event-${event.type.toLowerCase()}`, event.weekend && "weekend")}
+      type="button"
+      style={style}
+      onClick={onOpenDetail}
+      aria-label={`Open ${event.title}`}
+    >
       <div className="week-mobile-event-time">
         {event.time}
         <small>{event.end}</small>
@@ -758,34 +842,19 @@ function WeekAgendaCard({ event, onOpenDetail, style }: { event: ScheduleEvent; 
 function WeekMobileView({
   weekDates,
   selectedDate,
+  onSelectDate,
   onOpenDetail,
 }: {
   weekDates: Date[];
   selectedDate: Date;
+  onSelectDate: (date: Date) => void;
   onOpenDetail: () => void;
 }) {
-  const mobileWeekWidthRem = 50.5;
   return (
     <section className="week-mobile-board" aria-label="Week schedule">
-      <div className="week-mobile-header">
-        <span className="week-time-slot" />
-        <div className="week-mobile-days">
-          {weekDates.map((date) => {
-            const dateKey = formatDateKey(date);
-            const active = dateKey === formatDateKey(selectedDate);
-            return (
-              <button key={dateKey} type="button" className={classNames("week-mobile-day-head", active && "active")}>
-                <strong>{weekdayLongLabels[date.getDay() === 0 ? 6 : date.getDay() - 1]}</strong>
-                <span>{date.getDate()}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
       <div className="week-mobile-scroll">
         <div className="week-mobile-scroll-body">
-          <div className="week-mobile-timeline">
+          <div className="week-mobile-week-grid">
             <div className="week-mobile-time-rail" aria-hidden="true">
               {Array.from({ length: 16 }, (_, index) => {
                 const hour = 7 + index;
@@ -797,34 +866,55 @@ function WeekMobileView({
               })}
             </div>
 
-            <div className="week-mobile-grid" style={{ "--week-mobile-columns": 7, "--week-mobile-width": `${mobileWeekWidthRem}rem` } as CSSProperties}>
-              {Array.from({ length: 16 }, (_, index) => (
-                <div className="week-mobile-hour-line" key={index} />
-              ))}
-              {weekDates.flatMap((date) => {
+            <div className="week-mobile-columns">
+              {weekDates.map((date) => {
                 const dateKey = formatDateKey(date);
                 const events = getEventsForDate(dateKey);
-                const dayIndex = weekDates.findIndex((candidate) => formatDateKey(candidate) === dateKey);
-                return events.map((event) => {
-                  const top = ((toTimeMinutes(event.time) - 7 * 60) / 60) * 4.2;
-                  const height = Math.max(((toTimeMinutes(event.end) - toTimeMinutes(event.time)) / 60) * 4.2, 2.25);
-                  const dayWidth = 7.1;
-                  const left = `calc(${dayIndex * dayWidth}rem + 0.22rem)`;
-                  const width = `calc(${dayWidth}rem - 0.44rem)`;
-                  return (
-                    <WeekAgendaCard
-                      key={`${event.date}-${event.time}-${event.title}`}
-                      event={event}
-                      onOpenDetail={onOpenDetail}
-                      style={{
-                        top: `${top}rem`,
-                        height: `${height}rem`,
-                        left,
-                        width,
-                      }}
-                    />
-                  );
-                });
+                const active = dateKey === formatDateKey(selectedDate);
+                return (
+                  <div
+                    className={classNames("week-mobile-day-column", active && "active")}
+                    key={dateKey}
+                    onClick={() => onSelectDate(date)}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Select ${weekdayLongLabels[date.getDay() === 0 ? 6 : date.getDay() - 1]} ${date.getDate()}`}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        onSelectDate(date);
+                      }
+                    }}
+                  >
+                    <div className="week-mobile-day-column-head">
+                      <strong>{weekdayLongLabels[date.getDay() === 0 ? 6 : date.getDay() - 1]}</strong>
+                      <span>{date.getDate()}</span>
+                    </div>
+
+                    <div className="week-mobile-day-track">
+                      {Array.from({ length: 16 }, (_, index) => (
+                        <div className="week-mobile-hour-line" key={index} />
+                      ))}
+                      {events.length > 0 ? (
+                        events.map((event) => {
+                          const top = ((toTimeMinutes(event.time) - 7 * 60) / 60) * 3.8;
+                          const height = Math.max(((toTimeMinutes(event.end) - toTimeMinutes(event.time)) / 60) * 3.8, 2.3);
+                          return (
+                            <WeekAgendaCard
+                              key={`${event.date}-${event.time}-${event.title}`}
+                              event={event}
+                              onOpenDetail={onOpenDetail}
+                              style={{
+                                top: `${top}rem`,
+                                height: `${height}rem`,
+                              }}
+                            />
+                          );
+                        })
+                      ) : null}
+                    </div>
+                  </div>
+                );
               })}
             </div>
           </div>
@@ -874,7 +964,19 @@ function DayTimeline({ date, events, onOpenDetail }: { date: Date; events: Sched
   );
 }
 
-function WeekView({ selectedDate, onSelectDate, onOpenDetail }: { selectedDate: Date; onSelectDate: (date: Date) => void; onOpenDetail: () => void }) {
+function WeekView({
+  selectedDate,
+  onSelectDate,
+  onOpenDetail,
+  onJumpToToday,
+  onShiftWeek,
+}: {
+  selectedDate: Date;
+  onSelectDate: (date: Date) => void;
+  onOpenDetail: () => void;
+  onJumpToToday: () => void;
+  onShiftWeek: (delta: number) => void;
+}) {
   const weekDates = getWeekDates(selectedDate);
   return (
     <section className="view-panel active" data-panel="week">
@@ -883,27 +985,34 @@ function WeekView({ selectedDate, onSelectDate, onOpenDetail }: { selectedDate: 
           <SectionLabel>Week view</SectionLabel>
           <h3>{formatWeekLabel(weekDates[0])} - {formatWeekLabel(weekDates[6])}</h3>
         </div>
-        <span className="text-button-like">Sunday included</span>
+        <div className="week-nav">
+          <Button variant="ghost" size="icon" className="month-step week-step" onClick={() => onShiftWeek(-7)} aria-label="Previous week">
+            <ArrowLeft size={16} />
+          </Button>
+          <Button variant="ghost" size="sm" className="toolbar-link week-reset" onClick={onJumpToToday}>
+            <CalendarRange size={13} strokeWidth={1.9} />
+            This week
+          </Button>
+          <Button variant="ghost" size="icon" className="month-step week-step" onClick={() => onShiftWeek(7)} aria-label="Next week">
+            <ArrowRight size={16} />
+          </Button>
+        </div>
       </div>
 
       <div className="week-board">
         <div className="week-grid-shell">
-          <div className="week-grid-head">
-            <span className="week-time-slot" />
-            {weekDates.map((date) => (
-              <button key={formatDateKey(date)} type="button" className={classNames("week-day-head", formatDateKey(date) === formatDateKey(selectedDate) && "active")} onClick={() => onSelectDate(date)}>
-                <strong>{weekdayLongLabels[date.getDay() === 0 ? 6 : date.getDay() - 1]}</strong>
-                <span>{date.getDate()}</span>
-              </button>
-            ))}
-          </div>
           <div className="week-grid-body">
             <TimeRail />
             <div className="week-columns">
               {weekDates.map((date) => {
                 const events = getEventsForDate(formatDateKey(date));
+                const active = formatDateKey(date) === formatDateKey(selectedDate);
                 return (
-                  <div className={classNames("week-column", isWeekend(date) && "weekend")} key={formatDateKey(date)}>
+                  <div className={classNames("week-column", active && "active", isWeekend(date) && "weekend")} key={formatDateKey(date)}>
+                    <button type="button" className="week-column-head" onClick={() => onSelectDate(date)} aria-label={`Select ${weekdayLongLabels[date.getDay() === 0 ? 6 : date.getDay() - 1]} ${date.getDate()}`}>
+                      <strong>{weekdayLongLabels[date.getDay() === 0 ? 6 : date.getDay() - 1]}</strong>
+                      <span>{date.getDate()}</span>
+                    </button>
                     <div className="week-column-track">
                       {events.map((event) => {
                         const top = ((toTimeMinutes(event.time) - 7 * 60) / 60) * 3.8;
@@ -929,14 +1038,27 @@ function WeekView({ selectedDate, onSelectDate, onOpenDetail }: { selectedDate: 
         </div>
       </div>
 
-      <WeekMobileView weekDates={weekDates} selectedDate={selectedDate} onOpenDetail={onOpenDetail} />
+      <WeekMobileView weekDates={weekDates} selectedDate={selectedDate} onSelectDate={onSelectDate} onOpenDetail={onOpenDetail} />
     </section>
   );
 }
 
-function DayView({ onAdd, data, onOpenDetail }: { onAdd: () => void; data: ReturnType<typeof useMonthState>; onOpenDetail: () => void }) {
+function DayView({
+  onAdd,
+  data,
+  onOpenDetail,
+  onSelectDate,
+  onJumpToToday,
+}: {
+  onAdd: () => void;
+  data: ReturnType<typeof useMonthState>;
+  onOpenDetail: () => void;
+  onSelectDate: (date: Date) => void;
+  onJumpToToday: () => void;
+}) {
   const dateKey = data.selectedKey;
   const events = getEventsForDate(dateKey);
+  const weekDates = getWeekDates(data.selectedDate);
   return (
     <section className="view-panel active" data-panel="day">
       <div className="day-header">
@@ -944,9 +1066,27 @@ function DayView({ onAdd, data, onOpenDetail }: { onAdd: () => void; data: Retur
           <SectionLabel>Day view</SectionLabel>
           <h3>{data.dayDetail.title}</h3>
         </div>
-        <button className="primary-button" type="button" onClick={onAdd}>
-          + Add
-        </button>
+        <div className="day-nav">
+          <Button variant="ghost" size="sm" className="toolbar-link day-reset" onClick={onJumpToToday}>
+            <CalendarDays size={13} strokeWidth={1.9} />
+            Today
+          </Button>
+          <button className="primary-button" type="button" onClick={onAdd}>
+            + Add
+          </button>
+        </div>
+      </div>
+
+      <div className="day-date-strip" aria-label="Week dates">
+        {weekDates.map((date) => {
+          const active = formatDateKey(date) === dateKey;
+          return (
+            <button key={formatDateKey(date)} type="button" className={classNames("day-date-chip", active && "active")} onClick={() => onSelectDate(date)}>
+              <strong>{weekdayLongLabels[date.getDay() === 0 ? 6 : date.getDay() - 1]}</strong>
+              <span>{date.getDate()}</span>
+            </button>
+          );
+        })}
       </div>
 
       <DayTimeline date={data.selectedDate} events={events} onOpenDetail={onOpenDetail} />
@@ -1128,8 +1268,8 @@ function MorePage({
     <section className="page-panel">
       <div className="section-head">
         <div>
-          <SectionLabel>More</SectionLabel>
-          <h3>Secondary tools</h3>
+          <SectionLabel>Settings</SectionLabel>
+          <h3>App settings and tools</h3>
         </div>
       </div>
 
@@ -1164,7 +1304,17 @@ function MorePage({
   );
 }
 
-function DetailSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+function DetailSheet({
+  open,
+  onClose,
+  onEdit,
+  onDelete,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
   return (
     <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
       <DialogContent>
@@ -1190,9 +1340,105 @@ function DetailSheet({ open, onClose }: { open: boolean; onClose: () => void }) 
           </div>
 
           <div className="sheet-actions">
-            <Button variant="outline" size="sm" onClick={onClose}>Copy</Button>
-            <Button variant="outline" size="sm" onClick={onClose}>Edit</Button>
-            <Button variant="destructive" size="sm" onClick={onClose}>Delete</Button>
+            <Button variant="outline" size="sm" onClick={onEdit}>Edit</Button>
+            <Button variant="destructive" size="sm" onClick={onDelete}>Delete</Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function DeleteConfirmDialog({
+  open,
+  onClose,
+  onConfirm,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
+      <DialogContent className="confirm-dialog">
+        <DialogHeader>
+          <DialogTitle>Delete this class?</DialogTitle>
+          <DialogDescription>This will remove the class record. You can cancel and keep it if you opened this by mistake.</DialogDescription>
+        </DialogHeader>
+
+        <div className="confirm-card">
+          <strong>Jul 7, 2026 · 10:30 - 12:00</strong>
+          <p>Studio A · Regular · Paid</p>
+        </div>
+
+        <div className="sheet-actions">
+          <Button variant="outline" size="sm" onClick={onClose}>Cancel</Button>
+          <Button variant="destructive" size="sm" onClick={onConfirm}>Delete</Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function CopyMonthDialog({
+  open,
+  onClose,
+  monthLabel,
+  groups,
+}: {
+  open: boolean;
+  onClose: () => void;
+  monthLabel: string;
+  groups: CopyPreviewGroup[];
+}) {
+  return (
+    <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
+      <DialogContent className="copy-dialog">
+        <DialogHeader>
+          <DialogTitle>Preview last month</DialogTitle>
+          <DialogDescription>Review the previous month by studio before copying it into the current month.</DialogDescription>
+        </DialogHeader>
+
+        <div className="copy-preview-shell">
+          <div className="copy-preview-head">
+            <div>
+              <SectionLabel>Source month</SectionLabel>
+              <h4>{monthLabel}</h4>
+            </div>
+            <span className="text-button-like">{groups.reduce((sum, group) => sum + group.items.length, 0)} blocks</span>
+          </div>
+
+          <div className="copy-preview-list">
+            {groups.map((group) => (
+              <article className="copy-group" key={group.studio}>
+                <div className="copy-group-head">
+                  <strong>{group.studio}</strong>
+                  <span>{group.items.length} classes</span>
+                </div>
+                <div className="copy-group-items">
+                  {group.items.map((item) => (
+                    <div className="copy-row" key={`${group.studio}-${item.title}-${item.time}`}>
+                      <div className="copy-row-main">
+                        <strong>{item.weekday}</strong>
+                        <p>
+                          {item.time} · {item.title}
+                        </p>
+                      </div>
+                      <div className="copy-row-meta">
+                        <Badge variant="secondary">{item.type}</Badge>
+                        <Badge variant="secondary">{item.repeat}</Badge>
+                        <span>{item.fee}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </article>
+            ))}
+          </div>
+
+          <div className="sheet-actions">
+            <Button variant="outline" size="sm" onClick={onClose}>Cancel</Button>
+            <Button size="sm" onClick={onClose}>Copy into this month</Button>
           </div>
         </div>
       </DialogContent>
@@ -1210,6 +1456,10 @@ function EditorSheet({
   template: TemplatePreset | null;
 }) {
   const [selectedTemplateKey, setSelectedTemplateKey] = useState<string>(template?.key ?? "no-template");
+  const [startHour, setStartHour] = useState("18");
+  const [startMinute, setStartMinute] = useState("00");
+  const [endHour, setEndHour] = useState("19");
+  const [endMinute, setEndMinute] = useState("30");
 
   useEffect(() => {
     if (open) {
@@ -1217,9 +1467,18 @@ function EditorSheet({
     }
   }, [open, template]);
 
+  useEffect(() => {
+    const sourceTime = (templates.find((item) => item.key === selectedTemplateKey) ?? template)?.time;
+    const range = parseTimeRange(sourceTime);
+    setStartHour(range.startHour);
+    setStartMinute(range.startMinute);
+    setEndHour(range.endHour);
+    setEndMinute(range.endMinute);
+  }, [selectedTemplateKey, template]);
+
   const selectedTemplate = templates.find((item) => item.key === selectedTemplateKey) ?? null;
-  const fieldTemplate = selectedTemplate ?? template ?? templates[0];
-  const templateOptions = ["No template", ...templates.map((item) => item.title)];
+  const fieldTemplate = selectedTemplate ?? template;
+  const timePreview = `${startHour}:${startMinute} - ${endHour}:${endMinute}`;
 
   return (
     <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
@@ -1229,30 +1488,23 @@ function EditorSheet({
           <DialogDescription>Pick a template first, then adjust the repeat rule or override fields manually.</DialogDescription>
         </DialogHeader>
 
-        <div className="sheet-card editor-card">
+        <div className="editor-scroll">
+          <div className="sheet-card editor-card">
           <div className="form-grid">
             <label className="wide ui-field">
               <span>Template</span>
               <Select
-                value={selectedTemplate?.title ?? "No template"}
-                onValueChange={(value) => {
-                  if (value === "No template") {
-                    setSelectedTemplateKey("no-template");
-                    return;
-                  }
-                  const matched = templates.find((item) => item.title === value);
-                  if (matched) {
-                    setSelectedTemplateKey(matched.key);
-                  }
-                }}
+                value={selectedTemplateKey}
+                onValueChange={(value) => setSelectedTemplateKey(value)}
               >
                 <SelectTrigger data-testid="edit-template">
-                  <SelectValue placeholder="No template" />
+                  <SelectValue placeholder="Select template" />
                 </SelectTrigger>
                 <SelectContent>
-                  {templateOptions.map((item) => (
-                    <SelectItem key={item} value={item}>
-                      {item}
+                  <SelectItem value="no-template">No template</SelectItem>
+                  {templates.map((item) => (
+                    <SelectItem key={item.key} value={item.key}>
+                      {item.title}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -1280,7 +1532,7 @@ function EditorSheet({
 
             <label className="ui-field">
               <span>Type</span>
-              <select data-testid="edit-type" defaultValue={fieldTemplate.type}>
+              <select data-testid="edit-type" defaultValue={fieldTemplate?.type ?? "Regular"}>
                 <option>Regular</option>
                 <option>Private</option>
                 <option>Workshop</option>
@@ -1289,7 +1541,7 @@ function EditorSheet({
             </label>
             <label className="ui-field">
               <span>Studio</span>
-              <select data-testid="edit-studio" defaultValue={fieldTemplate.studio}>
+              <select data-testid="edit-studio" defaultValue={fieldTemplate?.studio ?? templates[0].studio}>
                 {Array.from(new Set(templates.map((template) => template.studio))).map((studio) => (
                   <option key={studio}>{studio}</option>
                 ))}
@@ -1301,11 +1553,74 @@ function EditorSheet({
             </label>
             <label className="ui-field">
               <span>Time</span>
-              <input data-testid="edit-time" type="text" defaultValue={fieldTemplate.time} />
+              <div className="alarm-range" data-testid="edit-time">
+                <div className="alarm-block">
+                  <span className="alarm-label">Start</span>
+                  <div className="alarm-picker">
+                    <Select value={startHour} onValueChange={setStartHour}>
+                      <SelectTrigger className="alarm-select">
+                        <SelectValue placeholder="HH" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {clockHourOptions.map((hour) => (
+                          <SelectItem key={hour} value={hour}>
+                            {hour}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <span className="alarm-divider">:</span>
+                    <Select value={startMinute} onValueChange={setStartMinute}>
+                      <SelectTrigger className="alarm-select">
+                        <SelectValue placeholder="MM" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {clockMinuteOptions.map((minute) => (
+                          <SelectItem key={minute} value={minute}>
+                            {minute}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="alarm-block">
+                  <span className="alarm-label">End</span>
+                  <div className="alarm-picker">
+                    <Select value={endHour} onValueChange={setEndHour}>
+                      <SelectTrigger className="alarm-select">
+                        <SelectValue placeholder="HH" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {clockHourOptions.map((hour) => (
+                          <SelectItem key={hour} value={hour}>
+                            {hour}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <span className="alarm-divider">:</span>
+                    <Select value={endMinute} onValueChange={setEndMinute}>
+                      <SelectTrigger className="alarm-select">
+                        <SelectValue placeholder="MM" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {clockMinuteOptions.map((minute) => (
+                          <SelectItem key={minute} value={minute}>
+                            {minute}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+              <div className="alarm-preview">Alarm-style time picker · {timePreview}</div>
             </label>
             <label className="wide ui-field">
               <span>Fee</span>
-              <input data-testid="edit-fee" type="text" defaultValue={fieldTemplate.fee} />
+              <input data-testid="edit-fee" type="text" defaultValue={fieldTemplate?.fee ?? ""} />
             </label>
 
             <div className="wide repeat-section">
@@ -1334,8 +1649,8 @@ function EditorSheet({
                 <label className="ui-field">
                   <span>Repeat interval</span>
                   <div className="inline-field">
-                    <input data-testid="repeat-interval-value" type="number" min="1" defaultValue={fieldTemplate.repeatEndValue.match(/^\d+/)?.[0] ?? "1"} />
-                    <select data-testid="repeat-interval-unit" defaultValue={fieldTemplate.repeatUnit}>
+                    <input data-testid="repeat-interval-value" type="number" min="1" defaultValue={fieldTemplate?.repeatEndValue.match(/^\d+/)?.[0] ?? "1"} />
+                    <select data-testid="repeat-interval-unit" defaultValue={fieldTemplate?.repeatUnit ?? "week"}>
                       <option value="week">week</option>
                       <option value="month">month</option>
                     </select>
@@ -1344,7 +1659,7 @@ function EditorSheet({
 
                 <label className="ui-field">
                   <span>Repeat on</span>
-                  <select data-testid="repeat-weekday" defaultValue={fieldTemplate.weekday}>
+                  <select data-testid="repeat-weekday" defaultValue={fieldTemplate?.weekday ?? "Tuesday"}>
                     {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((weekday) => (
                       <option key={weekday}>{weekday}</option>
                     ))}
@@ -1354,12 +1669,12 @@ function EditorSheet({
                 <label className="ui-field">
                   <span>Ends</span>
                   <div className="inline-field">
-                    <select data-testid="repeat-end-mode" defaultValue={fieldTemplate.repeatEndMode}>
+                    <select data-testid="repeat-end-mode" defaultValue={fieldTemplate?.repeatEndMode ?? "count"}>
                       <option value="count">After</option>
                       <option value="date">Until</option>
                       <option value="month">At month end</option>
                     </select>
-                    <input data-testid="repeat-end-value" type="text" defaultValue={fieldTemplate.repeatEndValue} />
+                    <input data-testid="repeat-end-value" type="text" defaultValue={fieldTemplate?.repeatEndValue ?? ""} />
                   </div>
                 </label>
               </div>
@@ -1390,12 +1705,13 @@ function EditorSheet({
             <Button size="sm" onClick={onClose}>Save</Button>
           </div>
         </div>
+        </div>
       </DialogContent>
     </Dialog>
   );
 }
 
-function HomePage({ activeView, setActiveView, data, setActiveMonthOffset, onSelectDate, onCopyLastMonth, onOpenDetail, onAdd, onSearch, onToday }: {
+function HomePage({ activeView, setActiveView, data, setActiveMonthOffset, onSelectDate, onCopyLastMonth, onOpenDetail, onAdd, onToday, onJumpToToday, onShiftWeek }: {
   activeView: View;
   setActiveView: (view: View) => void;
   data: ReturnType<typeof useMonthState>;
@@ -1404,17 +1720,17 @@ function HomePage({ activeView, setActiveView, data, setActiveMonthOffset, onSel
   onCopyLastMonth: () => void;
   onOpenDetail: () => void;
   onAdd: () => void;
-  onSearch: () => void;
   onToday: () => void;
+  onJumpToToday: () => void;
+  onShiftWeek: (delta: number) => void;
 }) {
   void setActiveMonthOffset;
-  void onSearch;
   void onToday;
   return (
     <>
       {activeView === "month" && <MonthView data={data} onSelectDate={onSelectDate} onCopyLastMonth={onCopyLastMonth} onOpenDetail={onOpenDetail} />}
-      {activeView === "week" && <WeekView selectedDate={data.selectedDate} onSelectDate={onSelectDate} onOpenDetail={onOpenDetail} />}
-      {activeView === "day" && <DayView onAdd={onAdd} data={data} onOpenDetail={onOpenDetail} />}
+      {activeView === "week" && <WeekView selectedDate={data.selectedDate} onSelectDate={onSelectDate} onOpenDetail={onOpenDetail} onJumpToToday={onJumpToToday} onShiftWeek={onShiftWeek} />}
+      {activeView === "day" && <DayView onAdd={onAdd} data={data} onOpenDetail={onOpenDetail} onSelectDate={onSelectDate} onJumpToToday={onJumpToToday} />}
     </>
   );
 }
@@ -1430,11 +1746,16 @@ export function App() {
   const [selectedDate, setSelectedDate] = useState<Date>(initialDate);
   const [moreSection, setMoreSection] = useState<MoreSection>("settings");
   const [detailOpen, setDetailOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [copyPreviewOpen, setCopyPreviewOpen] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editorTemplate, setEditorTemplate] = useState<TemplatePreset | null>(null);
 
   const data = useMonthState(activeMonthOffset, selectedDate);
   const monthTitle = `${monthNames[data.monthDate.getMonth()]} ${data.monthDate.getFullYear()}`;
+  const copyPreviewMonthDate = monthFromOffset(activeMonthOffset - 1);
+  const copyPreviewMonthLabel = `${monthNames[copyPreviewMonthDate.getMonth()]} ${copyPreviewMonthDate.getFullYear()}`;
+  const copyPreviewGroups = useMemo(() => groupTemplatesByStudio(), []);
 
   const handleToday = () => {
     setActiveMonthOffset(0);
@@ -1443,9 +1764,16 @@ export function App() {
     setPage("home");
   };
 
-  const handleSearch = () => {
-    setMoreSection("settings");
-    setPage("more");
+  const handleJumpToToday = () => {
+    setActiveMonthOffset(0);
+    setSelectedDate(new Date(initialDate));
+  };
+
+  const handleShiftWeek = (delta: number) => {
+    const nextDate = new Date(selectedDate);
+    nextDate.setDate(nextDate.getDate() + delta);
+    setSelectedDate(nextDate);
+    setActiveMonthOffset(monthOffsetFromDate(nextDate));
   };
 
   const openEditor = (template: TemplatePreset | null = null) => {
@@ -1458,7 +1786,10 @@ export function App() {
     setMoreSection("templates");
     setEditorTemplate(template);
     setEditorOpen(true);
-    setActiveView("day");
+  };
+
+  const openCopyPreview = () => {
+    setCopyPreviewOpen(true);
   };
 
   return (
@@ -1470,7 +1801,6 @@ export function App() {
         onPrevMonth={() => setActiveMonthOffset(monthOffsetFromDate(data.monthDate) - 1)}
         onNextMonth={() => setActiveMonthOffset(monthOffsetFromDate(data.monthDate) + 1)}
         onToday={handleToday}
-        onSearch={handleSearch}
         onAdd={() => openEditor(null)}
         page={page}
         setPage={setPage}
@@ -1484,21 +1814,40 @@ export function App() {
             onSelectDate={(date) => {
               setSelectedDate(date);
               setActiveMonthOffset(monthOffsetFromDate(date));
-              setActiveView("day");
             }}
-            onCopyLastMonth={() => setActiveMonthOffset(-1)}
+            onCopyLastMonth={openCopyPreview}
             onOpenDetail={() => setDetailOpen(true)}
             onAdd={() => openEditor(null)}
-            onSearch={handleSearch}
             onToday={handleToday}
+            onJumpToToday={handleJumpToToday}
+            onShiftWeek={handleShiftWeek}
           />
         ) : page === "reconcile" ? (
           <ReconcileView />
         ) : (
           <MorePage section={moreSection} setSection={setMoreSection} onUseTemplate={handleUseTemplate} />
         )}
-      </MobileFrame>
-      <DetailSheet open={detailOpen} onClose={() => setDetailOpen(false)} />
+        </MobileFrame>
+      <DetailSheet
+        open={detailOpen}
+        onClose={() => setDetailOpen(false)}
+        onEdit={() => {
+          setDetailOpen(false);
+          openEditor(null);
+        }}
+        onDelete={() => {
+          setDetailOpen(false);
+          setDeleteConfirmOpen(true);
+        }}
+      />
+      <DeleteConfirmDialog
+        open={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        onConfirm={() => {
+          setDeleteConfirmOpen(false);
+        }}
+      />
+      <CopyMonthDialog open={copyPreviewOpen} onClose={() => setCopyPreviewOpen(false)} monthLabel={copyPreviewMonthLabel} groups={copyPreviewGroups} />
       <EditorSheet
         open={editorOpen}
         onClose={() => {
