@@ -21,7 +21,9 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 type View = "month" | "week" | "day";
 type Page = "home" | "reconcile" | "more";
 type MoreSection = "settings" | "studio" | "templates";
+type EditorMode = "create" | "edit";
 type MonthKey = "2026-06" | "2026-07" | "2026-08";
+type CourseType = "Regular" | "Substitute" | "Studio private" | "Student private" | "Small group" | "Workshop";
 
 type ScheduleItem = {
   date: string;
@@ -59,7 +61,7 @@ type TimeBlock = {
   end: string;
   title: string;
   studio: string;
-  type: "Regular" | "Private" | "Workshop" | "Substitute";
+  type: CourseType;
   status: string;
   pay: string;
   note: string;
@@ -85,7 +87,7 @@ type TemplatePreset = {
   extra: string;
   status: "Live" | "Draft" | "Hold";
   studio: string;
-  type: "Regular" | "Private" | "Workshop" | "Substitute";
+  type: CourseType;
   weekday: string;
   time: string;
   repeatUnit: "week" | "month";
@@ -108,6 +110,16 @@ type CopyPreviewGroup = {
 
 const weekdayLabels = ["M", "T", "W", "T", "F", "S", "S"];
 const weekdayLongLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const courseTypeOptions: CourseType[] = [
+  "Regular",
+  "Substitute",
+  "Studio private",
+  "Student private",
+  "Small group",
+  "Workshop",
+];
+const repeatSupportedTypes = new Set<CourseType>(["Regular", "Small group"]);
+const manualCreateTypes = new Set<CourseType>(["Substitute", "Studio private", "Student private", "Workshop"]);
 const monthNames = [
   "January",
   "February",
@@ -170,7 +182,7 @@ const monthMetaData: Record<MonthKey, MonthMeta> = {
     ],
     list: [
       { time: "18:00", title: "Studio A", meta: "Regular · Open · Paid", fee: "¥300" },
-      { time: "20:30", title: "Studio B", meta: "Private · Pending · Unpaid", fee: "¥500" },
+      { time: "20:30", title: "Studio B", meta: "Studio private · Pending · Unpaid", fee: "¥500" },
     ],
     note: "Current month schedule with live day summary and reconciliation totals.",
   },
@@ -226,7 +238,7 @@ const studioRows = [
   },
   {
     name: "Studio B",
-    type: "Private",
+    type: "Studio private",
     baseFee: "¥500 / session",
     payDay: "30th",
     contact: "Ken · 138-0000-0002",
@@ -261,43 +273,43 @@ const templates: TemplatePreset[] = [
   {
     key: "studio-b-fri",
     title: "Friday 20:30 · Studio B",
-    detail: "Repeats every month",
-    extra: "Repeat until Aug 2026",
+    detail: "Repeats every week",
+    extra: "Repeat for 6 weeks",
     status: "Draft",
     studio: "Studio B",
-    type: "Private",
+    type: "Regular",
     weekday: "Friday",
     time: "20:30 - 22:00",
-    repeatUnit: "month",
-    repeatEndMode: "date",
-    repeatEndValue: "Aug 2026",
+    repeatUnit: "week",
+    repeatEndMode: "count",
+    repeatEndValue: "6 weeks",
     fee: "500",
   },
   {
     key: "studio-c-sat",
     title: "Saturday 14:00 · Studio C",
     detail: "Regular class template",
-    extra: "Repeat for 4 months",
+    extra: "Repeat until Aug 2026",
     status: "Hold",
     studio: "Studio C",
-    type: "Workshop",
+    type: "Regular",
     weekday: "Saturday",
     time: "14:00 - 16:00",
     repeatUnit: "month",
-    repeatEndMode: "count",
-    repeatEndValue: "4 months",
-    fee: "800",
+    repeatEndMode: "date",
+    repeatEndValue: "Aug 2026",
+    fee: "300",
   },
 ];
 
 const scheduleEvents: ScheduleEvent[] = [
   { date: "2026-07-07", time: "08:00", end: "09:00", title: "Warm-up", studio: "Studio A", type: "Regular", status: "Open", pay: "Paid", note: "Daily practice", weekend: false },
   { date: "2026-07-07", time: "10:30", end: "12:00", title: "Core Choreo", studio: "Studio A", type: "Regular", status: "Open", pay: "Paid", note: "Repeat weekly" },
-  { date: "2026-07-07", time: "18:00", end: "19:30", title: "Private Coaching", studio: "Studio B", type: "Private", status: "Pending", pay: "Overdue", note: "Manual confirm" },
+  { date: "2026-07-07", time: "18:00", end: "19:30", title: "Private Coaching", studio: "Studio B", type: "Studio private", status: "Pending", pay: "Overdue", note: "Manual confirm" },
   { date: "2026-07-08", time: "09:30", end: "11:00", title: "Technique Lab", studio: "Studio A", type: "Regular", status: "Open", pay: "Paid", note: "Weekday flow" },
   { date: "2026-07-08", time: "18:00", end: "19:00", title: "Studio Check-in", studio: "Studio C", type: "Substitute", status: "Leave", pay: "Pending", note: "Adjusted this week", weekend: false },
-  { date: "2026-07-09", time: "15:00", end: "16:30", title: "Youth Session", studio: "Studio C", type: "Workshop", status: "Leave", pay: "Pending", note: "Weekend included", weekend: true },
-  { date: "2026-07-10", time: "19:00", end: "20:30", title: "Night Drill", studio: "Studio B", type: "Private", status: "Closed", pay: "Paid", note: "One-off slot" },
+  { date: "2026-07-09", time: "15:00", end: "16:30", title: "Youth Session", studio: "Studio C", type: "Small group", status: "Leave", pay: "Pending", note: "Weekend included", weekend: true },
+  { date: "2026-07-10", time: "19:00", end: "20:30", title: "Night Drill", studio: "Studio B", type: "Student private", status: "Closed", pay: "Paid", note: "One-off slot" },
   { date: "2026-07-11", time: "20:30", end: "22:00", title: "Weekend Workshop", studio: "Studio B", type: "Workshop", status: "Closed", pay: "Paid", note: "Friday night block" },
   { date: "2026-07-12", time: "14:00", end: "15:30", title: "Open Training", studio: "Studio A", type: "Regular", status: "Open", pay: "Paid", note: "Weekend included", weekend: true },
   { date: "2026-07-13", time: "16:00", end: "18:00", title: "Wrap-up Rehearsal", studio: "Studio C", type: "Workshop", status: "Pending", pay: "Pending", note: "Sunday close", weekend: true },
@@ -315,7 +327,7 @@ const dayDetailByKey: Record<string, DayDetail> = {
     repeatRule: "Repeats every week · Tuesday · 10:30 - 12:00 · Repeat for 8 weeks",
     items: [
       { time: "18:00", title: "Studio A", meta: "Regular · Open · Paid", fee: "¥300" },
-      { time: "20:30", title: "Studio B", meta: "Private · Pending · Unpaid", fee: "¥500" },
+      { time: "20:30", title: "Studio B", meta: "Studio private · Pending · Unpaid", fee: "¥500" },
     ],
   },
   "2026-07-08": {
@@ -432,6 +444,55 @@ function parseTimeRange(input?: string | null) {
   };
 }
 
+function getCourseTypeTone(type: CourseType) {
+  switch (type) {
+    case "Regular":
+      return "success" as const;
+    case "Workshop":
+      return "neutral" as const;
+    case "Small group":
+      return "secondary" as const;
+    default:
+      return "warning" as const;
+  }
+}
+
+function getCourseFee(type: CourseType) {
+  switch (type) {
+    case "Workshop":
+      return 500;
+    case "Studio private":
+      return 500;
+    default:
+      return 300;
+  }
+}
+
+function getCourseTypeHint(type: CourseType) {
+  switch (type) {
+    case "Regular":
+      return "Regular classes are template-first and can show repeat rules.";
+    case "Substitute":
+      return "Substitute classes stay manual and keep the short form.";
+    case "Studio private":
+      return "Studio private classes keep the short form and require manual fee entry.";
+    case "Student private":
+      return "Student private classes stay focused on the core session details.";
+    case "Small group":
+      return "Small group classes can still use repeat details when needed.";
+    case "Workshop":
+      return "Workshops stay one-off and keep repeat controls hidden by default.";
+  }
+}
+
+function shouldShowRepeatControls(type: CourseType) {
+  return repeatSupportedTypes.has(type);
+}
+
+function isManualCreateType(type: CourseType) {
+  return manualCreateTypes.has(type);
+}
+
 function groupTemplatesByStudio(source: TemplatePreset[] = templates) {
   return source.reduce<CopyPreviewGroup[]>((groups, template) => {
     const group = groups.find((item) => item.studio === template.studio);
@@ -473,7 +534,7 @@ function useMonthState(activeMonthOffset: number, selectedDate: Date) {
       time: event.time,
       title: `${event.studio} · ${event.title}`,
       meta: `${event.type} · ${event.status} · ${event.pay}`,
-      fee: event.type === "Workshop" ? "¥500" : event.type === "Private" ? "¥300" : "¥300",
+      fee: `¥${getCourseFee(event.type)}`,
     }));
     const dayDetail = dayDetailByKey[selectedKey] ?? {
       title: formatWeekLabel(selectedDate),
@@ -481,7 +542,7 @@ function useMonthState(activeMonthOffset: number, selectedDate: Date) {
       summary: [
         { label: "Classes", value: String(selectedItems.length) },
         { label: "Status", value: selectedItems.length > 0 ? "Open" : "Empty" },
-        { label: "Fee", value: selectedItems.length > 0 ? `¥${selectedEvents.reduce((sum, item) => sum + (item.type === "Workshop" ? 500 : item.type === "Private" ? 300 : 300), 0)}` : "¥0" },
+        { label: "Fee", value: selectedItems.length > 0 ? `¥${selectedEvents.reduce((sum, item) => sum + getCourseFee(item.type), 0)}` : "¥0" },
       ],
       repeatRule: "Repeat rule appears here after a class is selected.",
       items: selectedItems,
@@ -656,9 +717,9 @@ function MonthView({ data, onSelectDate, onCopyLastMonth, onOpenDetail }: { data
     time: event.time,
     title: `${event.studio} · ${event.title}`,
     meta: `${event.type} · ${event.status} · ${event.pay}`,
-    fee: event.type === "Workshop" ? "¥500" : event.type === "Private" ? "¥300" : "¥300",
+    fee: `¥${getCourseFee(event.type)}`,
   }));
-  const selectedExpectedIncome = selectedEvents.reduce((sum, item) => sum + (item.type === "Workshop" ? 500 : item.type === "Private" ? 300 : 300), 0);
+  const selectedExpectedIncome = selectedEvents.reduce((sum, item) => sum + getCourseFee(item.type), 0);
   const selectedSessions = selectedEvents.length;
 
   return (
@@ -776,8 +837,8 @@ function TimeRail({ start = 7, end = 22, step = 1 }: { start?: number; end?: num
   );
 }
 
-function EventBadge({ label, tone }: { label: string; tone: "success" | "warning" | "danger" | "neutral" }) {
-  const variant = tone === "neutral" ? "secondary" : tone === "danger" ? "destructive" : tone;
+function EventBadge({ label, tone }: { label: string; tone: "success" | "warning" | "danger" | "neutral" | "secondary" }) {
+  const variant = tone === "neutral" || tone === "secondary" ? "secondary" : tone === "danger" ? "destructive" : tone;
   return <Badge variant={variant as "secondary" | "success" | "warning" | "destructive"}>{label}</Badge>;
 }
 
@@ -805,7 +866,7 @@ function EventCard({ event, style, onOpenDetail }: { event: ScheduleEvent; style
         <small>{event.studio}</small>
       </span>
       <span className="event-meta">
-        <EventBadge label={event.type} tone={event.type === "Regular" ? "success" : event.type === "Private" ? "warning" : event.type === "Workshop" ? "neutral" : "danger"} />
+        <EventBadge label={event.type} tone={getCourseTypeTone(event.type)} />
         <EventBadge label={event.pay} tone={event.pay === "Paid" ? "success" : event.pay === "Pending" ? "warning" : "danger"} />
       </span>
       <span className="event-handle event-handle-top" aria-hidden="true" />
@@ -832,7 +893,7 @@ function WeekAgendaCard({ event, onOpenDetail, style }: { event: ScheduleEvent; 
         <p>{event.studio}</p>
       </div>
       <div className="week-mobile-event-meta">
-        <EventBadge label={event.type} tone={event.type === "Regular" ? "success" : event.type === "Private" ? "warning" : event.type === "Workshop" ? "neutral" : "danger"} />
+        <EventBadge label={event.type} tone={getCourseTypeTone(event.type)} />
         <EventBadge label={event.pay} tone={event.pay === "Paid" ? "success" : event.pay === "Pending" ? "warning" : "danger"} />
       </div>
     </button>
@@ -1190,7 +1251,7 @@ function StudioPage() {
               <p>{studio.type} · {studio.baseFee} · {studio.payDay}</p>
               <small>{studio.contact}</small>
             </div>
-            <Badge variant={studio.type === "Regular" ? "success" : studio.type === "Private" ? "warning" : "secondary"}>{studio.type}</Badge>
+            <Badge variant={studio.type === "Regular" ? "success" : studio.type === "Studio private" ? "warning" : "secondary"}>{studio.type}</Badge>
           </article>
         ))}
       </div>
@@ -1450,22 +1511,84 @@ function EditorSheet({
   open,
   onClose,
   template,
+  mode,
 }: {
   open: boolean;
   onClose: () => void;
   template: TemplatePreset | null;
+  mode: EditorMode;
 }) {
+  const editSeed = {
+    courseType: "Regular" as const,
+    studio: "Studio A",
+    date: "2026-07-07",
+    contentTag: "Core choreo",
+    contentDescription: "Repeat weekly block with live practice.",
+    fee: "300",
+    paymentTime: "2026-07-07T13:00",
+    classStatus: "Open",
+    paymentStatus: "Paid",
+    departureMinutes: "30",
+    musicNote: "Use the July playlist.",
+    attachments: "",
+    note: "Keep the original repeat structure.",
+    actualReceivableAmount: "300",
+    actualReceivedAmount: "300",
+  };
+
   const [selectedTemplateKey, setSelectedTemplateKey] = useState<string>(template?.key ?? "no-template");
+  const [courseType, setCourseType] = useState<TemplatePreset["type"]>(template?.type ?? editSeed.courseType);
+  const [studio, setStudio] = useState(template?.studio ?? editSeed.studio);
+  const [dateValue, setDateValue] = useState(mode === "edit" ? editSeed.date : "2026-07-07");
   const [startHour, setStartHour] = useState("18");
   const [startMinute, setStartMinute] = useState("00");
   const [endHour, setEndHour] = useState("19");
   const [endMinute, setEndMinute] = useState("30");
+  const [contentTag, setContentTag] = useState(mode === "edit" ? editSeed.contentTag : "");
+  const [contentDescription, setContentDescription] = useState(mode === "edit" ? editSeed.contentDescription : "");
+  const [fee, setFee] = useState(template?.fee ?? (mode === "edit" ? editSeed.fee : ""));
+  const [paymentTime, setPaymentTime] = useState(mode === "edit" ? editSeed.paymentTime : "");
+  const [classStatus, setClassStatus] = useState(editSeed.classStatus);
+  const [paymentStatus, setPaymentStatus] = useState(editSeed.paymentStatus);
+  const [departureMinutes, setDepartureMinutes] = useState(mode === "edit" ? editSeed.departureMinutes : "30");
+  const [musicNote, setMusicNote] = useState(mode === "edit" ? editSeed.musicNote : "");
+  const [attachments, setAttachments] = useState(mode === "edit" ? editSeed.attachments : "");
+  const [note, setNote] = useState(mode === "edit" ? editSeed.note : "");
+  const [actualReceivableAmount, setActualReceivableAmount] = useState(mode === "edit" ? editSeed.actualReceivableAmount : "");
+  const [actualReceivedAmount, setActualReceivedAmount] = useState(mode === "edit" ? editSeed.actualReceivedAmount : "");
+  const [repeatEnabled, setRepeatEnabled] = useState(Boolean(template));
+  const [repeatIntervalValue, setRepeatIntervalValue] = useState(template?.repeatEndValue.match(/^\d+/)?.[0] ?? "1");
+  const [repeatIntervalUnit, setRepeatIntervalUnit] = useState<TemplatePreset["repeatUnit"]>(template?.repeatUnit ?? "week");
+  const [repeatWeekday, setRepeatWeekday] = useState(template?.weekday ?? "Tuesday");
+  const [repeatEndMode, setRepeatEndMode] = useState<TemplatePreset["repeatEndMode"]>(template?.repeatEndMode ?? "count");
+  const [repeatEndValue, setRepeatEndValue] = useState(template?.repeatEndValue ?? "");
 
   useEffect(() => {
     if (open) {
       setSelectedTemplateKey(template?.key ?? "no-template");
+      setCourseType(template?.type ?? (mode === "edit" ? editSeed.courseType : "Regular"));
+      setStudio(template?.studio ?? editSeed.studio);
+      setDateValue(mode === "edit" ? editSeed.date : "2026-07-07");
+      setContentTag(mode === "edit" ? editSeed.contentTag : template?.title ?? "");
+      setContentDescription(mode === "edit" ? editSeed.contentDescription : template?.detail ?? "");
+      setFee(template?.fee ?? (mode === "edit" ? editSeed.fee : ""));
+      setPaymentTime(mode === "edit" ? editSeed.paymentTime : "");
+      setClassStatus(editSeed.classStatus);
+      setPaymentStatus(editSeed.paymentStatus);
+      setDepartureMinutes(mode === "edit" ? editSeed.departureMinutes : "30");
+      setMusicNote(mode === "edit" ? editSeed.musicNote : "");
+      setAttachments(mode === "edit" ? editSeed.attachments : "");
+      setNote(mode === "edit" ? editSeed.note : "");
+      setActualReceivableAmount(mode === "edit" ? editSeed.actualReceivableAmount : "");
+      setActualReceivedAmount(mode === "edit" ? editSeed.actualReceivedAmount : "");
+      setRepeatEnabled(Boolean(template));
+      setRepeatIntervalValue(template?.repeatEndValue.match(/^\d+/)?.[0] ?? "1");
+      setRepeatIntervalUnit(template?.repeatUnit ?? "week");
+      setRepeatWeekday(template?.weekday ?? "Tuesday");
+      setRepeatEndMode(template?.repeatEndMode ?? "count");
+      setRepeatEndValue(template?.repeatEndValue ?? "");
     }
-  }, [open, template]);
+  }, [open, template, mode]);
 
   useEffect(() => {
     const sourceTime = (templates.find((item) => item.key === selectedTemplateKey) ?? template)?.time;
@@ -1474,237 +1597,448 @@ function EditorSheet({
     setStartMinute(range.startMinute);
     setEndHour(range.endHour);
     setEndMinute(range.endMinute);
+    if (selectedTemplateKey !== "no-template") {
+      const selected = templates.find((item) => item.key === selectedTemplateKey);
+      if (selected) {
+        setCourseType(selected.type);
+        setStudio(selected.studio);
+        setContentTag(selected.title);
+        setContentDescription(selected.detail);
+        setFee(selected.fee);
+        setRepeatIntervalUnit(selected.repeatUnit);
+        setRepeatWeekday(selected.weekday);
+        setRepeatEndMode(selected.repeatEndMode);
+        setRepeatEndValue(selected.repeatEndValue);
+      }
+    }
   }, [selectedTemplateKey, template]);
 
   const selectedTemplate = templates.find((item) => item.key === selectedTemplateKey) ?? null;
-  const fieldTemplate = selectedTemplate ?? template;
+  const isEditMode = mode === "edit";
+  const isTemplateCreate = mode === "create" && selectedTemplateKey !== "no-template";
+  const supportsRepeatControls = isEditMode || isTemplateCreate || shouldShowRepeatControls(courseType);
+  const isManualCreate = mode === "create" && selectedTemplateKey === "no-template";
+  const isSimpleCreateFlow = mode === "create" && selectedTemplateKey === "no-template" && isManualCreateType(courseType);
   const timePreview = `${startHour}:${startMinute} - ${endHour}:${endMinute}`;
+  const paymentPreview = paymentTime || "Not set";
+  const createHint = isSimpleCreateFlow
+    ? "Simple entry: basic info, content, fee, and payment time stay visible."
+    : isManualCreate
+      ? "Manual entry: regular and small group classes can expand repeat details."
+      : "Template entry: fields follow the selected preset and still allow manual overrides.";
+  const courseTypeHint = getCourseTypeHint(courseType);
+  const repeatSectionVisible = !isEditMode && supportsRepeatControls;
 
   return (
     <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
       <DialogContent className="editor-dialog">
         <DialogHeader>
-          <DialogTitle>Add / edit class</DialogTitle>
-          <DialogDescription>Pick a template first, then adjust the repeat rule or override fields manually.</DialogDescription>
+          <DialogTitle>{isEditMode ? "Edit class" : "Add class"}</DialogTitle>
+          <DialogDescription>
+            {isEditMode
+              ? "Review every field, update the class record, and keep the history explicit."
+              : "Pick a template or choose a class type first, then fill the fields needed for this course."}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="editor-scroll">
           <div className="sheet-card editor-card">
-          <div className="form-grid">
-            <label className="wide ui-field">
-              <span>Template</span>
-              <Select
-                value={selectedTemplateKey}
-                onValueChange={(value) => setSelectedTemplateKey(value)}
-              >
-                <SelectTrigger data-testid="edit-template">
-                  <SelectValue placeholder="Select template" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="no-template">No template</SelectItem>
-                  {templates.map((item) => (
-                    <SelectItem key={item.key} value={item.key}>
-                      {item.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </label>
-
-            <Card className="wide template-summary">
-              <CardHeader>
+              <div className="editor-banner">
                 <div>
-                  <CardDescription>Current template</CardDescription>
-                  <CardTitle>{selectedTemplate ? selectedTemplate.title : "No template selected"}</CardTitle>
+                  <SectionLabel>{isEditMode ? "Edit mode" : "Add mode"}</SectionLabel>
+                  <strong>{isEditMode ? "Full record editing" : isSimpleCreateFlow ? "Simple class entry" : "Template-first class entry"}</strong>
+                  <p>{isEditMode ? "All fields are visible so history stays explicit." : isSimpleCreateFlow ? "Substitute, private, and workshop classes stay compact by default." : "Regular and small group classes can still use repeat controls."}</p>
                 </div>
-                <Badge variant={selectedTemplate ? "success" : "secondary"}>{selectedTemplate ? "Live" : "Manual"}</Badge>
-              </CardHeader>
-              <CardContent>
-                {selectedTemplate ? (
-                  <p>
-                    {selectedTemplate.studio} · {selectedTemplate.weekday} · {selectedTemplate.time} · Repeat {selectedTemplate.repeatUnit}
-                  </p>
-                ) : (
-                  <p>No template attached. Fill the class manually or choose a preset to auto-fill repeat fields.</p>
-                )}
-              </CardContent>
-            </Card>
-
-            <label className="ui-field">
-              <span>Type</span>
-              <select data-testid="edit-type" defaultValue={fieldTemplate?.type ?? "Regular"}>
-                <option>Regular</option>
-                <option>Private</option>
-                <option>Workshop</option>
-                <option>Substitute</option>
-              </select>
-            </label>
-            <label className="ui-field">
-              <span>Studio</span>
-              <select data-testid="edit-studio" defaultValue={fieldTemplate?.studio ?? templates[0].studio}>
-                {Array.from(new Set(templates.map((template) => template.studio))).map((studio) => (
-                  <option key={studio}>{studio}</option>
-                ))}
-              </select>
-            </label>
-            <label className="ui-field">
-              <span>Date</span>
-              <input data-testid="edit-date" type="date" defaultValue="2026-07-07" />
-            </label>
-            <label className="ui-field">
-              <span>Time</span>
-              <div className="alarm-range" data-testid="edit-time">
-                <div className="alarm-block">
-                  <span className="alarm-label">Start</span>
-                  <div className="alarm-picker">
-                    <Select value={startHour} onValueChange={setStartHour}>
-                      <SelectTrigger className="alarm-select">
-                        <SelectValue placeholder="HH" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {clockHourOptions.map((hour) => (
-                          <SelectItem key={hour} value={hour}>
-                            {hour}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <span className="alarm-divider">:</span>
-                    <Select value={startMinute} onValueChange={setStartMinute}>
-                      <SelectTrigger className="alarm-select">
-                        <SelectValue placeholder="MM" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {clockMinuteOptions.map((minute) => (
-                          <SelectItem key={minute} value={minute}>
-                            {minute}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="alarm-block">
-                  <span className="alarm-label">End</span>
-                  <div className="alarm-picker">
-                    <Select value={endHour} onValueChange={setEndHour}>
-                      <SelectTrigger className="alarm-select">
-                        <SelectValue placeholder="HH" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {clockHourOptions.map((hour) => (
-                          <SelectItem key={hour} value={hour}>
-                            {hour}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <span className="alarm-divider">:</span>
-                    <Select value={endMinute} onValueChange={setEndMinute}>
-                      <SelectTrigger className="alarm-select">
-                        <SelectValue placeholder="MM" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {clockMinuteOptions.map((minute) => (
-                          <SelectItem key={minute} value={minute}>
-                            {minute}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </div>
-              <div className="alarm-preview">Alarm-style time picker · {timePreview}</div>
-            </label>
-            <label className="wide ui-field">
-              <span>Fee</span>
-              <input data-testid="edit-fee" type="text" defaultValue={fieldTemplate?.fee ?? ""} />
-            </label>
-
-            <div className="wide repeat-section">
-              <div className="repeat-toggle">
-                <span>Regular class repeat</span>
-                <label className="switch">
-                  <input data-testid="repeat-enable" type="checkbox" defaultChecked />
-                  <span />
-                </label>
+                <Badge variant={isEditMode ? "warning" : "success"}>{isEditMode ? "Edit" : "Create"}</Badge>
               </div>
 
-              <Card className="repeat-summary">
-                <CardContent>
-                  <strong>{selectedTemplate ? `Using template: ${selectedTemplate.title}` : "Manual repeat setup"}</strong>
-                  {selectedTemplate ? (
-                    <p>
-                      {selectedTemplate.weekday} · {selectedTemplate.time} · Repeat {selectedTemplate.repeatUnit} · End {selectedTemplate.repeatEndMode}
-                    </p>
-                  ) : (
-                    <p>Template not selected. Repeat fields stay editable by hand.</p>
-                  )}
-                </CardContent>
-              </Card>
+            <div className="editor-section">
+              <div className="editor-section-head">
+                <strong>Source</strong>
+                <span>Template and type</span>
+              </div>
 
-              <div className="repeat-fields">
-                <label className="ui-field">
-                  <span>Repeat interval</span>
-                  <div className="inline-field">
-                    <input data-testid="repeat-interval-value" type="number" min="1" defaultValue={fieldTemplate?.repeatEndValue.match(/^\d+/)?.[0] ?? "1"} />
-                    <select data-testid="repeat-interval-unit" defaultValue={fieldTemplate?.repeatUnit ?? "week"}>
-                      <option value="week">week</option>
-                      <option value="month">month</option>
-                    </select>
-                  </div>
+              <div className="form-grid">
+                <label className="wide ui-field">
+                  <span>Template</span>
+                  <Select value={selectedTemplateKey} onValueChange={(value) => setSelectedTemplateKey(value)}>
+                    <SelectTrigger data-testid="edit-template">
+                      <SelectValue placeholder="Select template" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="no-template">No template</SelectItem>
+                      {templates.map((item) => (
+                        <SelectItem key={item.key} value={item.key}>
+                          {item.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </label>
 
+                <Card className="wide template-summary">
+                  <CardHeader>
+                    <div>
+                      <CardDescription>Current template</CardDescription>
+                      <CardTitle>{selectedTemplate ? selectedTemplate.title : "No template selected"}</CardTitle>
+                    </div>
+                    <Badge variant={selectedTemplate ? "success" : "secondary"}>{selectedTemplate ? "Live" : "Manual"}</Badge>
+                  </CardHeader>
+                  <CardContent>
+                      {selectedTemplate ? (
+                        <p>
+                          {selectedTemplate.studio} · {selectedTemplate.weekday} · {selectedTemplate.time} · Repeat {selectedTemplate.repeatUnit}
+                        </p>
+                      ) : (
+                        <p>Templates are for regular-class patterns. Manual mode keeps the current course type explicit.</p>
+                      )}
+                  </CardContent>
+                </Card>
+
                 <label className="ui-field">
-                  <span>Repeat on</span>
-                  <select data-testid="repeat-weekday" defaultValue={fieldTemplate?.weekday ?? "Tuesday"}>
-                    {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((weekday) => (
-                      <option key={weekday}>{weekday}</option>
+                  <span>Course type</span>
+                  <select data-testid="edit-type" value={courseType} onChange={(event) => setCourseType(event.target.value as TemplatePreset["type"])}>
+                    {courseTypeOptions.map((type) => (
+                      <option key={type}>{type}</option>
                     ))}
                   </select>
+                  {!isEditMode ? <small className="field-hint">{courseTypeHint}</small> : null}
+                  {!isEditMode ? <small className="field-hint">{createHint}</small> : null}
                 </label>
 
-                <label className="ui-field">
-                  <span>Ends</span>
-                  <div className="inline-field">
-                    <select data-testid="repeat-end-mode" defaultValue={fieldTemplate?.repeatEndMode ?? "count"}>
-                      <option value="count">After</option>
-                      <option value="date">Until</option>
-                      <option value="month">At month end</option>
+                {isEditMode && (
+                  <label className="ui-field">
+                    <span>Class status</span>
+                    <select value={classStatus} onChange={(event) => setClassStatus(event.target.value)}>
+                      <option>Open</option>
+                      <option>Pending</option>
+                      <option>Leave</option>
+                      <option>Closed</option>
                     </select>
-                    <input data-testid="repeat-end-value" type="text" defaultValue={fieldTemplate?.repeatEndValue ?? ""} />
-                  </div>
-                </label>
-              </div>
+                  </label>
+                )}
 
-              <div className="weekday-picker" aria-label="Repeat weekdays">
-                {weekdayLabels.map((label, index) => (
-                  <Button key={`${label}-${index}`} variant={index === 1 ? "default" : "outline"} size="sm" className="weekday-chip" type="button">
-                    {label}
-                  </Button>
-                ))}
-              </div>
-
-              <div className="repeat-chip-row">
-                <Button variant="default" size="sm">Repeat weekly</Button>
-                <Button variant="outline" size="sm">Repeat monthly</Button>
-                <Button variant="outline" size="sm">Repeat until month</Button>
+                {isEditMode && (
+                  <label className="ui-field">
+                    <span>Payment status</span>
+                    <select value={paymentStatus} onChange={(event) => setPaymentStatus(event.target.value)}>
+                      <option>Unpaid</option>
+                      <option>Paid</option>
+                      <option>Partially paid</option>
+                      <option>Overdue unpaid</option>
+                    </select>
+                  </label>
+                )}
               </div>
             </div>
 
-            <label className="wide ui-field">
-              <span>Note</span>
-              <textarea rows={3} placeholder="Optional notes" />
-            </label>
-          </div>
+            <div className="editor-section">
+              <div className="editor-section-head">
+                <strong>Basic info</strong>
+                <span>Studio, date, and time</span>
+              </div>
 
-          <div className="sheet-actions">
-            <Button variant="outline" size="sm" onClick={onClose}>Cancel</Button>
-            <Button size="sm" onClick={onClose}>Save</Button>
+              <div className="form-grid">
+                <label className="ui-field">
+                  <span>Studio</span>
+                  <select data-testid="edit-studio" value={studio} onChange={(event) => setStudio(event.target.value)}>
+                    {Array.from(new Set(templates.map((item) => item.studio))).map((studioName) => (
+                      <option key={studioName}>{studioName}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="ui-field">
+                  <span>Date</span>
+                  <input data-testid="edit-date" type="date" value={dateValue} onChange={(event) => setDateValue(event.target.value)} />
+                </label>
+                <label className="wide ui-field">
+                  <span>Time</span>
+                  <div className="alarm-range" data-testid="edit-time">
+                    <div className="alarm-block">
+                      <span className="alarm-label">Start</span>
+                      <div className="alarm-picker">
+                        <Select value={startHour} onValueChange={setStartHour}>
+                          <SelectTrigger className="alarm-select">
+                            <SelectValue placeholder="HH" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {clockHourOptions.map((hour) => (
+                              <SelectItem key={hour} value={hour}>
+                                {hour}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <span className="alarm-divider">:</span>
+                        <Select value={startMinute} onValueChange={setStartMinute}>
+                          <SelectTrigger className="alarm-select">
+                            <SelectValue placeholder="MM" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {clockMinuteOptions.map((minute) => (
+                              <SelectItem key={minute} value={minute}>
+                                {minute}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="alarm-block">
+                      <span className="alarm-label">End</span>
+                      <div className="alarm-picker">
+                        <Select value={endHour} onValueChange={setEndHour}>
+                          <SelectTrigger className="alarm-select">
+                            <SelectValue placeholder="HH" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {clockHourOptions.map((hour) => (
+                              <SelectItem key={hour} value={hour}>
+                                {hour}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <span className="alarm-divider">:</span>
+                        <Select value={endMinute} onValueChange={setEndMinute}>
+                          <SelectTrigger className="alarm-select">
+                            <SelectValue placeholder="MM" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {clockMinuteOptions.map((minute) => (
+                              <SelectItem key={minute} value={minute}>
+                                {minute}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="alarm-preview">Time range · {timePreview}</div>
+                </label>
+              </div>
+            </div>
+
+            <div className="editor-section">
+              <div className="editor-section-head">
+                <strong>Content</strong>
+                <span>What this class is about</span>
+              </div>
+
+              <div className="form-grid">
+                <label className="ui-field">
+                  <span>Content tag</span>
+                  <input value={contentTag} onChange={(event) => setContentTag(event.target.value)} placeholder="For example: core choreo" />
+                </label>
+                <label className="wide ui-field">
+                  <span>Content description</span>
+                  <textarea rows={3} value={contentDescription} onChange={(event) => setContentDescription(event.target.value)} placeholder="Describe the class content or reminder" />
+                </label>
+              </div>
+            </div>
+
+            <div className="editor-section">
+              <div className="editor-section-head">
+                <strong>Settlement</strong>
+                <span>Payment time is always required</span>
+              </div>
+
+              <div className="form-grid">
+                <label className="wide ui-field">
+                  <span>Payment time</span>
+                  <input type="datetime-local" required value={paymentTime} onChange={(event) => setPaymentTime(event.target.value)} />
+                  <small className="field-hint">Shown for every new class, whether you use a template or not.</small>
+                </label>
+              </div>
+            </div>
+
+            <div className="editor-section">
+              <div className="editor-section-head">
+                <strong>Fee</strong>
+                <span>Amount and settlement</span>
+              </div>
+
+              <div className="form-grid">
+                <label className="ui-field">
+                  <span>Fee</span>
+                  <input data-testid="edit-fee" type="text" value={fee} onChange={(event) => setFee(event.target.value)} />
+                </label>
+                {isEditMode ? (
+                  <>
+                    <label className="ui-field">
+                      <span>Expected receivable</span>
+                      <input type="text" value={actualReceivableAmount} onChange={(event) => setActualReceivableAmount(event.target.value)} placeholder="Optional" />
+                    </label>
+                    <label className="ui-field">
+                      <span>Received amount</span>
+                      <input type="text" value={actualReceivedAmount} onChange={(event) => setActualReceivedAmount(event.target.value)} placeholder="Optional" />
+                    </label>
+                  </>
+                ) : (
+                  <div className="wide create-default-note">
+                    <strong>Defaults on save</strong>
+                    <p>Status becomes Open and payment becomes Unpaid unless you change them later in edit mode.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {!isEditMode && !isSimpleCreateFlow ? (
+              <div className="editor-section">
+                <div className="editor-section-head">
+                  <strong>Note</strong>
+                  <span>Extra context for repeat-capable classes</span>
+                </div>
+                <div className="form-grid">
+                  <label className="wide ui-field">
+                    <span>Note</span>
+                    <textarea rows={3} value={note} onChange={(event) => setNote(event.target.value)} placeholder="Optional notes" />
+                  </label>
+                </div>
+              </div>
+            ) : null}
+
+            {isEditMode ? (
+              <div className="editor-section">
+                <div className="editor-section-head">
+                  <strong>Advanced</strong>
+                  <span>Editing keeps every field visible</span>
+                </div>
+
+                <div className="form-grid">
+                  <label className="ui-field">
+                    <span>Departure minutes</span>
+                    <input type="number" min="0" value={departureMinutes} onChange={(event) => setDepartureMinutes(event.target.value)} />
+                  </label>
+                  <label className="ui-field">
+                    <span>Music note</span>
+                    <input type="text" value={musicNote} onChange={(event) => setMusicNote(event.target.value)} placeholder="Playback notes or music cues" />
+                  </label>
+                  <label className="wide ui-field">
+                    <span>Attachments</span>
+                    <input type="text" value={attachments} onChange={(event) => setAttachments(event.target.value)} placeholder="Local attachment references" />
+                  </label>
+                  <label className="wide ui-field">
+                    <span>Note</span>
+                    <textarea rows={3} value={note} onChange={(event) => setNote(event.target.value)} placeholder="Optional notes" />
+                  </label>
+                </div>
+              </div>
+            ) : null}
+
+            {repeatSectionVisible && (
+              <div className="repeat-section">
+                <div className="repeat-toggle">
+                  <div>
+                    <span>Repeat schedule</span>
+                    <small>{repeatEnabled ? "Repeat details are shown below." : "Turn this on only when the class should repeat."}</small>
+                  </div>
+                  <label className="switch">
+                    <input data-testid="repeat-enable" type="checkbox" checked={repeatEnabled} onChange={(event) => setRepeatEnabled(event.target.checked)} />
+                    <span />
+                  </label>
+                </div>
+
+                {repeatEnabled ? (
+                  <>
+                    <Card className="repeat-summary">
+                      <CardContent>
+                        <strong>{selectedTemplate ? `Using template: ${selectedTemplate.title}` : "Manual repeat setup"}</strong>
+                        {selectedTemplate ? (
+                          <p>
+                            {selectedTemplate.weekday} · {selectedTemplate.time} · Repeat {selectedTemplate.repeatUnit} · End {selectedTemplate.repeatEndMode}
+                          </p>
+                        ) : (
+                          <p>Template not selected. Repeat fields stay editable by hand.</p>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    <div className="repeat-fields">
+                      <label className="ui-field">
+                        <span>Repeat interval</span>
+                        <div className="inline-field">
+                          <input data-testid="repeat-interval-value" type="number" min="1" value={repeatIntervalValue} onChange={(event) => setRepeatIntervalValue(event.target.value)} />
+                          <select data-testid="repeat-interval-unit" value={repeatIntervalUnit} onChange={(event) => setRepeatIntervalUnit(event.target.value as TemplatePreset["repeatUnit"])}>
+                            <option value="week">week</option>
+                            <option value="month">month</option>
+                          </select>
+                        </div>
+                      </label>
+
+                      <label className="ui-field">
+                        <span>Repeat on</span>
+                        <select data-testid="repeat-weekday" value={repeatWeekday} onChange={(event) => setRepeatWeekday(event.target.value)}>
+                          {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((weekday) => (
+                            <option key={weekday}>{weekday}</option>
+                          ))}
+                        </select>
+                      </label>
+
+                      <label className="ui-field">
+                        <span>Ends</span>
+                        <div className="inline-field">
+                          <select data-testid="repeat-end-mode" value={repeatEndMode} onChange={(event) => setRepeatEndMode(event.target.value as TemplatePreset["repeatEndMode"])}>
+                            <option value="count">After</option>
+                            <option value="date">Until</option>
+                            <option value="month">At month end</option>
+                          </select>
+                          <input data-testid="repeat-end-value" type="text" value={repeatEndValue} onChange={(event) => setRepeatEndValue(event.target.value)} />
+                        </div>
+                      </label>
+                    </div>
+
+                    <div className="weekday-picker" aria-label="Repeat weekdays">
+                      {weekdayLabels.map((label, index) => (
+                        <Button key={`${label}-${index}`} variant={index === 1 ? "default" : "outline"} size="sm" className="weekday-chip" type="button">
+                          {label}
+                        </Button>
+                      ))}
+                    </div>
+
+                    <div className="repeat-chip-row">
+                      <Button variant="default" size="sm" type="button">
+                        Repeat weekly
+                      </Button>
+                      <Button variant="outline" size="sm" type="button">
+                        Repeat monthly
+                      </Button>
+                      <Button variant="outline" size="sm" type="button">
+                        Repeat until month
+                      </Button>
+                    </div>
+                  </>
+                ) : null}
+              </div>
+            )}
+
+            <div className="editor-section footer-section">
+              {mode === "create" && isSimpleCreateFlow ? (
+                <div className="create-default-note">
+                  <strong>Simple entry defaults</strong>
+                  <p>Class status is Open and payment status is Unpaid. Add the rest later if the record becomes a regular class.</p>
+                </div>
+              ) : null}
+
+              {mode === "edit" ? (
+                <div className="create-default-note">
+                  <strong>Current payment time</strong>
+                  <p>{paymentPreview}</p>
+                </div>
+              ) : null}
+
+              <div className="sheet-actions">
+                <Button variant="outline" size="sm" onClick={onClose}>
+                  Cancel
+                </Button>
+                <Button size="sm" onClick={onClose}>
+                  {isEditMode ? "Update" : "Save"}
+                </Button>
+              </div>
+            </div>
           </div>
-        </div>
         </div>
       </DialogContent>
     </Dialog>
@@ -1750,6 +2084,7 @@ export function App() {
   const [copyPreviewOpen, setCopyPreviewOpen] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editorTemplate, setEditorTemplate] = useState<TemplatePreset | null>(null);
+  const [editorMode, setEditorMode] = useState<EditorMode>("create");
 
   const data = useMonthState(activeMonthOffset, selectedDate);
   const monthTitle = `${monthNames[data.monthDate.getMonth()]} ${data.monthDate.getFullYear()}`;
@@ -1776,8 +2111,9 @@ export function App() {
     setActiveMonthOffset(monthOffsetFromDate(nextDate));
   };
 
-  const openEditor = (template: TemplatePreset | null = null) => {
+  const openEditor = (template: TemplatePreset | null = null, editorMode: EditorMode = "create") => {
     setEditorTemplate(template);
+    setEditorMode(editorMode);
     setEditorOpen(true);
   };
 
@@ -1801,7 +2137,7 @@ export function App() {
         onPrevMonth={() => setActiveMonthOffset(monthOffsetFromDate(data.monthDate) - 1)}
         onNextMonth={() => setActiveMonthOffset(monthOffsetFromDate(data.monthDate) + 1)}
         onToday={handleToday}
-        onAdd={() => openEditor(null)}
+        onAdd={() => openEditor(null, "create")}
         page={page}
         setPage={setPage}
       >
@@ -1817,7 +2153,7 @@ export function App() {
             }}
             onCopyLastMonth={openCopyPreview}
             onOpenDetail={() => setDetailOpen(true)}
-            onAdd={() => openEditor(null)}
+            onAdd={() => openEditor(null, "create")}
             onToday={handleToday}
             onJumpToToday={handleJumpToToday}
             onShiftWeek={handleShiftWeek}
@@ -1833,7 +2169,7 @@ export function App() {
         onClose={() => setDetailOpen(false)}
         onEdit={() => {
           setDetailOpen(false);
-          openEditor(null);
+          openEditor(null, "edit");
         }}
         onDelete={() => {
           setDetailOpen(false);
@@ -1853,8 +2189,10 @@ export function App() {
         onClose={() => {
           setEditorOpen(false);
           setEditorTemplate(null);
+          setEditorMode("create");
         }}
         template={editorTemplate}
+        mode={editorMode}
       />
     </AppShell>
   );
