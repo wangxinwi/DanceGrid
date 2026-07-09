@@ -51,6 +51,19 @@ const bannedImports = [
   'bootstrap-icons',
 ];
 
+const bannedBrowserInstallPatterns = [
+  /\bplaywright\s+install\b/i,
+  /\bplaywright\s+install-deps\b/i,
+  /\bpuppeteer\s+browsers\s+install\b/i,
+  /\b@playwright\/test\s+install\b/i,
+  /\bnpx\s+playwright\b.*\binstall\b/i,
+  /\bnpm\s+(?:install|i)\s+(?:-D\s+)?(?:@playwright\/test|playwright|puppeteer)\b/i,
+  /\bpnpm\s+(?:add|install)\s+(?:-D\s+)?(?:@playwright\/test|playwright|puppeteer)\b/i,
+  /\byarn\s+(?:add|install)\s+(?:-D\s+)?(?:@playwright\/test|playwright|puppeteer)\b/i,
+  /\bnpx\s+puppeteer\b.*\bbrowsers\s+install\b/i,
+  /\bnpm\s+exec\s+playwright\b.*\binstall\b/i,
+];
+
 async function readStdin() {
   if (process.stdin.isTTY) return '';
   const chunks = [];
@@ -150,6 +163,30 @@ function summarizeImportIssues(event) {
   return { imports, banned, approved };
 }
 
+function getCommandStrings(event) {
+  const commands = [];
+  const direct = [
+    event?.tool_input?.command,
+    event?.command,
+    event?.tool_input?.shell,
+  ];
+  for (const item of direct) {
+    if (typeof item === 'string' && item.trim()) commands.push(item);
+  }
+  return commands;
+}
+
+function summarizeBrowserInstallIssues(event) {
+  const commands = getCommandStrings(event);
+  const matches = [];
+  for (const command of commands) {
+    for (const pattern of bannedBrowserInstallPatterns) {
+      if (pattern.test(command)) matches.push(command);
+    }
+  }
+  return Array.from(new Set(matches));
+}
+
 function extractCandidatePaths(event) {
   const paths = new Set();
   const direct = [
@@ -218,8 +255,27 @@ function formatImportReminder(banned, approved) {
   return lines.join('\n');
 }
 
+function formatBrowserReminder(commands) {
+  return [
+    '[project-rules] Browser tooling check:',
+    ...Array.from(new Set(commands)).map((item) => `- browser download/install command: ${item}`),
+    '',
+    'Use the built-in browser and screenshot tools in the harness instead of downloading a separate browser or browser engine.',
+  ].join('\n');
+}
+
 function denyImport(banned) {
   const message = formatImportReminder(banned, []);
+  process.stdout.write(JSON.stringify({
+    permission: 'deny',
+    user_message: message,
+    agent_message: message,
+  }));
+  process.exit(0);
+}
+
+function denyBrowserInstall(commands) {
+  const message = formatBrowserReminder(commands);
   process.stdout.write(JSON.stringify({
     permission: 'deny',
     user_message: message,
@@ -251,14 +307,22 @@ async function main() {
   if (!event || typeof event !== 'object') return allow();
 
   const { banned, approved } = summarizeImportIssues(event);
+  const browserInstalls = summarizeBrowserInstallIssues(event);
   const protectedPaths = findProtectedPaths(event);
   const hasImportViolation = banned.length > 0;
+  const hasBrowserInstallViolation = browserInstalls.length > 0;
   const hasProtectedPath = protectedPaths.length > 0;
 
   if (mode === 'pre') {
     if (hasProtectedPath) return deny(protectedPaths);
+    if (hasBrowserInstallViolation) return denyBrowserInstall(browserInstalls);
     if (hasImportViolation) return denyImport(Array.from(new Set(banned)));
     return allow();
+  }
+
+  if (hasBrowserInstallViolation) {
+    process.stdout.write(formatBrowserReminder(browserInstalls));
+    process.exit(0);
   }
 
   if (hasImportViolation) {

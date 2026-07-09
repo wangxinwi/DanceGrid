@@ -10,6 +10,16 @@
         "command": "node \"/Users/vidawung/projects/DanceGrid/.hooks/project-rules-hook.mjs\" pre",
         "timeout": 5
       }
+    ],
+    "postToolUse": [
+      {
+        "command": "node \"/Users/vidawung/projects/DanceGrid/.hooks/ui-self-check.mjs\"",
+        "timeout": 120
+      },
+      {
+        "command": "node \"/Users/vidawung/projects/DanceGrid/.hooks/project-rules-hook.mjs\" post",
+        "timeout": 5
+      }
     ]
   }
 }

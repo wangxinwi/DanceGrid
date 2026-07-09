@@ -221,6 +221,24 @@ When copying the previous month:
 5. Verify UI, edge cases, and domain rules.
 6. Do not add future scope unless explicitly requested.
 
+## Delivery Self-Check
+
+- Any UI change must be self-checked before it is handed back to the user.
+- The self-check should include at minimum:
+  - A successful local build
+  - A review of the changed screen in a browser
+  - A comparison against `AGENTS.md` and `prd-v0.1.md`
+- Do not claim a UI task is done until the screen has been visually reviewed for hierarchy, spacing, typography, color, and mobile fit.
+- If the build fails or the visual review exposes a mismatch, continue fixing it before replying.
+- When a hook or script reports a self-check reminder, treat it as part of the task, not as optional commentary.
+
+## Browser Access Rule
+
+- Do not install or download a separate browser, browser engine, or browser automation bundle just to inspect the UI.
+- Use the built-in browser and screenshot tools provided by the harness for visual review.
+- For any UI change, open the app in the built-in browser, capture a screenshot, and compare it against the request before final delivery.
+- Do not add Playwright browser downloads, Puppeteer browser installs, Chromium downloads, or similar setup steps unless explicitly approved for a specific task.
+
 ## When Designing UI
 
 - Start from task clarity, not decoration.

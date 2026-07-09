@@ -2,7 +2,7 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Edit|Write|apply_patch|MultiEdit",
+        "matcher": "Edit|Write|apply_patch|MultiEdit|Shell|Bash|Command|Exec|Run",
         "hooks": [
           {
             "type": "command",
@@ -15,7 +15,7 @@
     ],
     "PostToolUse": [
       {
-        "matcher": "Edit|Write|apply_patch|MultiEdit",
+        "matcher": "Edit|Write|apply_patch|MultiEdit|Shell|Bash|Command|Exec|Run",
         "hooks": [
           {
             "type": "command",
@@ -28,6 +28,12 @@
             "command": "node \"/Users/vidawung/projects/DanceGrid/.hooks/project-rules-hook.mjs\" post",
             "timeout": 5,
             "statusMessage": "Checking project rules"
+          },
+          {
+            "type": "command",
+            "command": "node \"/Users/vidawung/projects/DanceGrid/.hooks/ui-self-check.mjs\"",
+            "timeout": 120,
+            "statusMessage": "Running delivery self-check"
           }
         ]
       }
