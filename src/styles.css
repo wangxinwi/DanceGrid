@@ -922,6 +922,10 @@
     @apply text-[0.98rem] font-semibold text-slate-900;
   }
 
+  .studio-type-summary {
+    @apply flex flex-wrap gap-1.5;
+  }
+
   .detail-grid {
     @apply grid grid-cols-2 gap-3;
   }
@@ -1065,6 +1069,78 @@
 
   .template-row {
     @apply items-start text-left;
+  }
+
+  .studio-row {
+    @apply w-full cursor-pointer items-start text-left transition hover:bg-slate-50;
+  }
+
+  .studio-badge-stack {
+    @apply flex flex-wrap justify-end gap-1.5;
+  }
+
+  .studio-type-picker {
+    @apply flex flex-wrap gap-2;
+  }
+
+  .studio-type-chip {
+    @apply inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium text-slate-600 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+  }
+
+  .studio-type-chip span {
+    @apply leading-none;
+  }
+
+  .studio-type-chip.is-selected {
+    @apply text-slate-900 shadow-none;
+  }
+
+  .studio-type-chip--regular {
+    @apply border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100;
+  }
+
+  .studio-type-chip--substitute {
+    @apply border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100;
+  }
+
+  .studio-type-chip--studio-private {
+    @apply border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100;
+  }
+
+  .studio-type-chip--student-private {
+    @apply border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100;
+  }
+
+  .studio-type-chip--small-group {
+    @apply border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100;
+  }
+
+  .studio-type-chip--workshop {
+    @apply border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100;
+  }
+
+  .studio-type-chip.is-selected.studio-type-chip--regular {
+    @apply border-blue-400 bg-blue-100 text-blue-800;
+  }
+
+  .studio-type-chip.is-selected.studio-type-chip--substitute {
+    @apply border-slate-400 bg-slate-100 text-slate-800;
+  }
+
+  .studio-type-chip.is-selected.studio-type-chip--studio-private {
+    @apply border-amber-400 bg-amber-100 text-amber-800;
+  }
+
+  .studio-type-chip.is-selected.studio-type-chip--student-private {
+    @apply border-violet-400 bg-violet-100 text-violet-800;
+  }
+
+  .studio-type-chip.is-selected.studio-type-chip--small-group {
+    @apply border-emerald-400 bg-emerald-100 text-emerald-800;
+  }
+
+  .studio-type-chip.is-selected.studio-type-chip--workshop {
+    @apply border-rose-400 bg-rose-100 text-rose-800;
   }
 }
 

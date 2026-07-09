@@ -17,6 +17,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 
 type View = "month" | "week" | "day";
 type Page = "home" | "reconcile" | "more";
@@ -108,6 +109,48 @@ type CopyPreviewGroup = {
   }>;
 };
 
+type StudioRecord = {
+  id: string;
+  name: string;
+  displayTypes: CourseType[];
+  baseFee: string;
+  payDay: string;
+  contact: string;
+  note: string;
+  weeklySessionCount: string;
+  address?: string;
+  feeUnit?: string;
+  cancelCompensationRatio?: string;
+  contactName?: string;
+  contactMethod?: string;
+  groupTag?: string;
+};
+
+type StudioDraft = {
+  name: string;
+  address: string;
+  baseFee: string;
+  feeUnit: string;
+  payDay: string;
+  cancelCompensationRatio: string;
+  weeklySessionCount: string;
+  displayTypes: CourseType[];
+  contactName: string;
+  contactMethod: string;
+  note: string;
+  groupTag: string;
+};
+
+type TemplateDraft = {
+  title: string;
+  studio: string;
+  weekday: string;
+  time: string;
+  detail: string;
+  extra: string;
+  fee: string;
+};
+
 const weekdayLabels = ["M", "T", "W", "T", "F", "S", "S"];
 const weekdayLongLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const courseTypeOptions: CourseType[] = [
@@ -118,6 +161,8 @@ const courseTypeOptions: CourseType[] = [
   "Small group",
   "Workshop",
 ];
+const studioDisplayTypeOptions = courseTypeOptions;
+const studioFeeUnitOptions = ["/ session", "/ class", "/ month"] as const;
 const repeatSupportedTypes = new Set<CourseType>(["Regular", "Small group"]);
 const manualCreateTypes = new Set<CourseType>(["Substitute", "Studio private", "Student private", "Workshop"]);
 const monthNames = [
@@ -227,34 +272,58 @@ const reconcileRows: ReconcileRow[] = [
   },
 ];
 
-const studioRows = [
+const initialStudioRows: StudioRecord[] = [
   {
+    id: "studio-a",
     name: "Studio A",
-    type: "Regular",
+    displayTypes: ["Regular", "Small group"],
     baseFee: "¥300 / session",
     payDay: "28th",
     contact: "Miki · 138-0000-0001",
     note: "Repeat weekly Tue 18:00",
+    weeklySessionCount: "2",
+    address: "Central district",
+    feeUnit: "/ session",
+    cancelCompensationRatio: "50%",
+    contactName: "Miki",
+    contactMethod: "138-0000-0001",
+    groupTag: "Main room",
   },
   {
+    id: "studio-b",
     name: "Studio B",
-    type: "Studio private",
+    displayTypes: ["Studio private", "Student private"],
     baseFee: "¥500 / session",
     payDay: "30th",
     contact: "Ken · 138-0000-0002",
     note: "Weekend sessions included",
+    weeklySessionCount: "1",
+    address: "North district",
+    feeUnit: "/ session",
+    cancelCompensationRatio: "60%",
+    contactName: "Ken",
+    contactMethod: "138-0000-0002",
+    groupTag: "Private room",
   },
   {
+    id: "studio-c",
     name: "Studio C",
-    type: "Workshop",
+    displayTypes: ["Workshop"],
     baseFee: "¥800 / session",
     payDay: "31st",
     contact: "Aya · 138-0000-0003",
     note: "One-off events and special slots",
+    weeklySessionCount: "1",
+    address: "West district",
+    feeUnit: "/ session",
+    cancelCompensationRatio: "40%",
+    contactName: "Aya",
+    contactMethod: "138-0000-0003",
+    groupTag: "Events",
   },
 ];
 
-const templates: TemplatePreset[] = [
+const initialTemplates: TemplatePreset[] = [
   {
     key: "studio-a-tue",
     title: "Tuesday 18:00 · Studio A",
@@ -457,6 +526,39 @@ function getCourseTypeTone(type: CourseType) {
   }
 }
 
+function getStudioTypeTone(type: CourseType) {
+  switch (type) {
+    case "Regular":
+      return "success" as const;
+    case "Substitute":
+      return "secondary" as const;
+    case "Studio private":
+      return "warning" as const;
+    case "Student private":
+      return "default" as const;
+    case "Small group":
+      return "secondary" as const;
+    case "Workshop":
+      return "destructive" as const;
+  }
+}
+
+function formatStudioDisplayTypes(types: CourseType[]) {
+  return types.length > 0 ? types.join(" · ") : "Not set";
+}
+
+function uniqueStudioTypes(types: CourseType[]) {
+  return studioDisplayTypeOptions.filter((type) => types.includes(type));
+}
+
+function toggleStudioType(types: CourseType[], type: CourseType) {
+  if (types.includes(type)) {
+    const next = types.filter((item) => item !== type);
+    return next.length > 0 ? next : types;
+  }
+  return uniqueStudioTypes([...types, type]);
+}
+
 function getCourseFee(type: CourseType) {
   switch (type) {
     case "Workshop":
@@ -493,7 +595,7 @@ function isManualCreateType(type: CourseType) {
   return manualCreateTypes.has(type);
 }
 
-function groupTemplatesByStudio(source: TemplatePreset[] = templates) {
+function groupTemplatesByStudio(source: TemplatePreset[]) {
   return source.reduce<CopyPreviewGroup[]>((groups, template) => {
     const group = groups.find((item) => item.studio === template.studio);
     const entry = {
@@ -1233,7 +1335,15 @@ function ReconcilePage() {
   );
 }
 
-function StudioPage() {
+function StudioPage({
+  studios,
+  onAddStudio,
+  onOpenStudio,
+}: {
+  studios: typeof initialStudioRows;
+  onAddStudio: () => void;
+  onOpenStudio: (studio: StudioRecord) => void;
+}) {
   return (
     <section className="page-panel">
       <div className="section-head">
@@ -1241,25 +1351,40 @@ function StudioPage() {
           <SectionLabel>Studio</SectionLabel>
           <h3>Studio list</h3>
         </div>
-        <button className="text-button" type="button">+ New studio</button>
+        <button className="text-button" type="button" onClick={onAddStudio}>
+          + New studio
+        </button>
       </div>
       <div className="list-stack">
-        {studioRows.map((studio) => (
-          <article className="list-row" key={studio.name}>
+        {studios.map((studio) => (
+          <button className="list-row studio-row" key={studio.id} type="button" onClick={() => onOpenStudio(studio)} aria-label={`Open studio ${studio.name}`}>
             <div>
               <strong>{studio.name}</strong>
-              <p>{studio.type} · {studio.baseFee} · {studio.payDay}</p>
+              <p>{formatStudioDisplayTypes(studio.displayTypes)} · {studio.baseFee} · {studio.payDay}</p>
               <small>{studio.contact}</small>
             </div>
-            <Badge variant={studio.type === "Regular" ? "success" : studio.type === "Studio private" ? "warning" : "secondary"}>{studio.type}</Badge>
-          </article>
+            <div className="studio-badge-stack">
+              {studio.displayTypes.slice(0, 2).map((type) => (
+                <Badge key={type} variant={getStudioTypeTone(type)}>{type}</Badge>
+              ))}
+              {studio.displayTypes.length > 2 ? <Badge variant="secondary">+{studio.displayTypes.length - 2}</Badge> : null}
+            </div>
+          </button>
         ))}
       </div>
     </section>
   );
 }
 
-function TemplatePage({ onUseTemplate }: { onUseTemplate: (template: TemplatePreset) => void }) {
+function TemplatePage({
+  templates,
+  onUseTemplate,
+  onAddTemplate,
+}: {
+  templates: TemplatePreset[];
+  onUseTemplate: (template: TemplatePreset) => void;
+  onAddTemplate: () => void;
+}) {
   return (
     <section className="page-panel">
       <div className="section-head">
@@ -1267,7 +1392,9 @@ function TemplatePage({ onUseTemplate }: { onUseTemplate: (template: TemplatePre
           <SectionLabel>Templates</SectionLabel>
           <h3>Regular class templates</h3>
         </div>
-        <button className="text-button" type="button">+ New template</button>
+        <button className="text-button" type="button" onClick={onAddTemplate}>
+          + New template
+        </button>
       </div>
       <div className="list-stack">
         {templates.map((template) => (
@@ -1285,16 +1412,47 @@ function TemplatePage({ onUseTemplate }: { onUseTemplate: (template: TemplatePre
   );
 }
 
-function SettingsPage() {
+function SettingsPage({
+  studios,
+  templates,
+  onAddStudio,
+  onAddTemplate,
+}: {
+  studios: typeof initialStudioRows;
+  templates: TemplatePreset[];
+  onAddStudio: () => void;
+  onAddTemplate: () => void;
+}) {
   return (
     <section className="page-panel">
       <div className="section-head">
         <div>
           <SectionLabel>Settings</SectionLabel>
-          <h3>Security and display</h3>
+          <h3>Security, display, and management</h3>
         </div>
       </div>
+
       <div className="settings-grid">
+        <article className="settings-card">
+          <strong>Studio management</strong>
+          <p>Keep studio records local, editable, and ready for fee reconciliation.</p>
+          <small>{studios.length} studios · latest {studios.slice(0, 2).map((studio) => studio.name).join(" · ")}</small>
+          <div className="settings-actions">
+            <Button type="button" size="sm" onClick={onAddStudio}>
+              + New studio
+            </Button>
+          </div>
+        </article>
+        <article className="settings-card">
+          <strong>Template management</strong>
+          <p>Maintain regular class templates from one place and reuse them for new classes.</p>
+          <small>{templates.length} templates · latest {templates.slice(0, 2).map((template) => template.title).join(" · ")}</small>
+          <div className="settings-actions">
+            <Button type="button" size="sm" onClick={onAddTemplate}>
+              + New template
+            </Button>
+          </div>
+        </article>
         <article className="settings-card">
           <strong>Local lock</strong>
           <p>Enable PIN or biometric unlock for the app.</p>
@@ -1319,11 +1477,21 @@ function SettingsPage() {
 function MorePage({
   section,
   setSection,
+  studios,
+  templates,
   onUseTemplate,
+  onAddStudio,
+  onAddTemplate,
+  onOpenStudio,
 }: {
   section: MoreSection;
   setSection: (section: MoreSection) => void;
+  studios: typeof initialStudioRows;
+  templates: TemplatePreset[];
   onUseTemplate: (template: TemplatePreset) => void;
+  onAddStudio: () => void;
+  onAddTemplate: () => void;
+  onOpenStudio: (studio: StudioRecord) => void;
 }) {
   return (
     <section className="page-panel">
@@ -1354,14 +1522,383 @@ function MorePage({
 
       <div className="more-stack">
         {section === "settings" ? (
-          <SettingsPage />
+          <SettingsPage studios={studios} templates={templates} onAddStudio={onAddStudio} onAddTemplate={onAddTemplate} />
         ) : section === "studio" ? (
-          <StudioPage />
+          <StudioPage studios={studios} onAddStudio={onAddStudio} onOpenStudio={onOpenStudio} />
         ) : (
-          <TemplatePage onUseTemplate={onUseTemplate} />
+          <TemplatePage templates={templates} onUseTemplate={onUseTemplate} onAddTemplate={onAddTemplate} />
         )}
       </div>
     </section>
+  );
+}
+
+function StudioDialog({
+  open,
+  onClose,
+  mode,
+  studio,
+  onCreate,
+  onUpdate,
+}: {
+  open: boolean;
+  onClose: () => void;
+  mode: "create" | "edit";
+  studio: StudioRecord | null;
+  onCreate: (studio: StudioRecord) => void;
+  onUpdate: (studio: StudioRecord) => void;
+}) {
+  const seed: StudioDraft = {
+    name: "",
+    address: "",
+    baseFee: "300",
+    feeUnit: "/ session",
+    payDay: "28th",
+    cancelCompensationRatio: "50%",
+    weeklySessionCount: "1",
+    displayTypes: ["Regular"],
+    contactName: "",
+    contactMethod: "",
+    note: "",
+    groupTag: "General",
+  };
+
+  const isEditMode = mode === "edit";
+  const [name, setName] = useState(seed.name);
+  const [address, setAddress] = useState(seed.address);
+  const [baseFee, setBaseFee] = useState(seed.baseFee);
+  const [feeUnit, setFeeUnit] = useState(seed.feeUnit);
+  const [payDay, setPayDay] = useState(seed.payDay);
+  const [cancelCompensationRatio, setCancelCompensationRatio] = useState(seed.cancelCompensationRatio);
+  const [weeklySessionCount, setWeeklySessionCount] = useState(seed.weeklySessionCount);
+  const [displayTypes, setDisplayTypes] = useState<CourseType[]>(seed.displayTypes);
+  const [contactName, setContactName] = useState(seed.contactName);
+  const [contactMethod, setContactMethod] = useState(seed.contactMethod);
+  const [note, setNote] = useState(seed.note);
+  const [groupTag, setGroupTag] = useState(seed.groupTag);
+
+  useEffect(() => {
+    if (open) {
+      const source = studio ?? null;
+      setName(source?.name ?? seed.name);
+      setAddress(source?.address ?? seed.address);
+      setBaseFee(source ? source.baseFee.replace(/^¥/, "").split(" ")[0] ?? seed.baseFee : seed.baseFee);
+      setFeeUnit(source?.feeUnit ?? seed.feeUnit);
+      setPayDay(source?.payDay ?? seed.payDay);
+      setCancelCompensationRatio(source?.cancelCompensationRatio ?? seed.cancelCompensationRatio);
+      setWeeklySessionCount(source?.weeklySessionCount ?? seed.weeklySessionCount);
+      setDisplayTypes(source?.displayTypes?.length ? source.displayTypes : seed.displayTypes);
+      setContactName(source?.contactName ?? seed.contactName);
+      setContactMethod(source?.contactMethod ?? seed.contactMethod);
+      setNote(source?.note ?? seed.note);
+      setGroupTag(source?.groupTag ?? seed.groupTag);
+    }
+  }, [open, studio]);
+
+  const handleSubmit = () => {
+    if (!name.trim()) return;
+    const nextStudio: StudioRecord = {
+      id: studio?.id ?? `studio-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+      name: name.trim(),
+      displayTypes: uniqueStudioTypes(displayTypes.length > 0 ? displayTypes : seed.displayTypes),
+      baseFee: `¥${baseFee.trim()} ${feeUnit}`,
+      payDay,
+      contact: [contactName.trim(), contactMethod.trim()].filter(Boolean).join(" · "),
+      note: note.trim(),
+      weeklySessionCount: weeklySessionCount.trim() || "1",
+      address: address.trim(),
+      feeUnit,
+      cancelCompensationRatio: cancelCompensationRatio.trim(),
+      contactName: contactName.trim(),
+      contactMethod: contactMethod.trim(),
+      groupTag: groupTag.trim(),
+    };
+    if (isEditMode) {
+      onUpdate(nextStudio);
+    } else {
+      onCreate(nextStudio);
+    }
+    onClose();
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
+      <DialogContent className="editor-dialog">
+        <DialogHeader>
+          <DialogTitle>{isEditMode ? "Studio details" : "New studio"}</DialogTitle>
+          <DialogDescription>
+            {isEditMode
+              ? "Review the full studio record and update only this studio."
+              : "Capture the studio details used for scheduling and settlement."}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="editor-scroll">
+          {isEditMode ? (
+            <div className="editor-section">
+              <div className="editor-section-head">
+                <strong>Overview</strong>
+                <span>Editable studio record</span>
+              </div>
+              <div className="detail-grid">
+                <div><span>Studio</span><strong>{name || "Untitled studio"}</strong></div>
+                <div>
+                  <span>Display type</span>
+                  <strong className="studio-type-summary">
+                    {displayTypes.length > 0 ? displayTypes.map((type) => (
+                      <Badge key={type} variant={getStudioTypeTone(type)}>{type}</Badge>
+                    )) : "Not set"}
+                  </strong>
+                </div>
+                <div><span>Weekly classes</span><strong>{weeklySessionCount || "1"} / week</strong></div>
+                <div><span>Fee</span><strong>{`¥${baseFee || "0"} ${feeUnit}`}</strong></div>
+                <div><span>Pay day</span><strong>{payDay}</strong></div>
+                <div><span>Contact</span><strong>{[contactName, contactMethod].filter(Boolean).join(" · ") || "Not set"}</strong></div>
+              </div>
+            </div>
+          ) : null}
+
+          <div className="editor-section">
+            <div className="editor-section-head">
+              <strong>Studio details</strong>
+              <span>Local management only</span>
+            </div>
+            <div className="form-grid">
+              <label className="ui-field">
+                <span>Studio name</span>
+                <input value={name} onChange={(event) => setName(event.target.value)} placeholder="Studio A" />
+              </label>
+              <label className="ui-field">
+                <span>Group tag</span>
+                <input value={groupTag} onChange={(event) => setGroupTag(event.target.value)} placeholder="Main room" />
+              </label>
+              <label className="wide ui-field">
+                <span>Address</span>
+                <input value={address} onChange={(event) => setAddress(event.target.value)} placeholder="Studio address" />
+              </label>
+              <label className="ui-field">
+                <span>Weekly classes</span>
+                <input type="number" min="0" value={weeklySessionCount} onChange={(event) => setWeeklySessionCount(event.target.value)} inputMode="numeric" placeholder="2" />
+                <small className="field-hint">按周填写排课节数，不与其他表关联。</small>
+              </label>
+            </div>
+          </div>
+
+          <div className="editor-section">
+            <div className="editor-section-head">
+              <strong>Fee and settlement</strong>
+              <span>Base fee and pay day</span>
+            </div>
+            <div className="form-grid">
+              <label className="ui-field">
+                <span>Base fee</span>
+                <input value={baseFee} onChange={(event) => setBaseFee(event.target.value)} placeholder="300" />
+              </label>
+              <label className="ui-field">
+                <span>Fee unit</span>
+                <select value={feeUnit} onChange={(event) => setFeeUnit(event.target.value)}>
+                  {studioFeeUnitOptions.map((option) => (
+                    <option key={option}>{option}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="ui-field">
+                <span>Pay day</span>
+                <input value={payDay} onChange={(event) => setPayDay(event.target.value)} placeholder="28th" />
+              </label>
+              <label className="ui-field">
+                <span>Cancel ratio</span>
+                <input value={cancelCompensationRatio} onChange={(event) => setCancelCompensationRatio(event.target.value)} placeholder="50%" />
+              </label>
+            </div>
+          </div>
+
+          <div className="editor-section">
+            <div className="editor-section-head">
+              <strong>Contact</strong>
+              <span>Contact person and method</span>
+            </div>
+            <div className="form-grid">
+              <label className="ui-field">
+                <span>Contact name</span>
+                <input value={contactName} onChange={(event) => setContactName(event.target.value)} placeholder="Miki" />
+              </label>
+              <label className="ui-field">
+                <span>Contact method</span>
+                <input value={contactMethod} onChange={(event) => setContactMethod(event.target.value)} placeholder="138-0000-0001" />
+              </label>
+              <label className="wide ui-field">
+                <span>Notes</span>
+                <textarea rows={3} value={note} onChange={(event) => setNote(event.target.value)} placeholder="Optional notes" />
+              </label>
+            </div>
+          </div>
+
+          <div className="editor-section">
+            <div className="editor-section-head">
+              <strong>Display type</strong>
+              <span>Multiple tags are allowed</span>
+            </div>
+            <div className="studio-type-picker" role="group" aria-label="Studio display type">
+              {studioDisplayTypeOptions.map((option) => {
+                const selected = displayTypes.includes(option);
+                return (
+                  <button
+                    key={option}
+                    type="button"
+                    className={cn("studio-type-chip", `studio-type-chip--${option.toLowerCase().replace(/\s+/g, "-")}`, selected && "is-selected")}
+                    aria-pressed={selected}
+                    onClick={() => setDisplayTypes((current) => toggleStudioType(current, option))}
+                  >
+                    {selected ? "✓" : "+"}
+                    <span>{option}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <small className="field-hint">Select one or more types that this studio can be used for.</small>
+          </div>
+
+          <div className="sheet-actions">
+            <Button variant="outline" size="sm" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button size="sm" onClick={handleSubmit}>
+              {isEditMode ? "Update studio" : "Create studio"}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function TemplateDialog({
+  open,
+  onClose,
+  onCreate,
+  studioNames,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onCreate: (template: TemplatePreset) => void;
+  studioNames: string[];
+}) {
+  const seed = {
+    title: "",
+    studio: studioNames[0] ?? "Studio A",
+    weekday: "Tuesday",
+    time: "18:00 - 19:30",
+    detail: "Repeats every week",
+    extra: "Repeat for 8 weeks",
+    fee: "300",
+  };
+
+  const [title, setTitle] = useState(seed.title);
+  const [studio, setStudio] = useState(seed.studio);
+  const [weekday, setWeekday] = useState(seed.weekday);
+  const [time, setTime] = useState(seed.time);
+  const [detail, setDetail] = useState(seed.detail);
+  const [extra, setExtra] = useState(seed.extra);
+  const [fee, setFee] = useState(seed.fee);
+
+  useEffect(() => {
+    if (open) {
+      setTitle(seed.title);
+      setStudio(studioNames[0] ?? "Studio A");
+      setWeekday(seed.weekday);
+      setTime(seed.time);
+      setDetail(seed.detail);
+      setExtra(seed.extra);
+      setFee(seed.fee);
+    }
+  }, [open, studioNames]);
+
+  const handleSubmit = () => {
+    const start = time.split("-")[0]?.trim() ?? "18:00";
+    onCreate({
+      key: `template-${Date.now()}`,
+      title: title.trim() || `${weekday} ${start} · ${studio}`,
+      detail: detail.trim() || "Repeats every week",
+      extra: extra.trim() || "Repeat for 8 weeks",
+      status: "Live",
+      studio,
+      type: "Regular",
+      weekday,
+      time,
+      repeatUnit: "week",
+      repeatEndMode: "count",
+      repeatEndValue: "8 weeks",
+      fee: fee.trim() || "300",
+    });
+    onClose();
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
+      <DialogContent className="editor-dialog">
+        <DialogHeader>
+          <DialogTitle>New template</DialogTitle>
+          <DialogDescription>Create a regular class template for repeat scheduling.</DialogDescription>
+        </DialogHeader>
+
+        <div className="editor-scroll">
+          <div className="editor-section">
+            <div className="editor-section-head">
+              <strong>Template details</strong>
+              <span>Regular class template</span>
+            </div>
+            <div className="form-grid">
+              <label className="ui-field">
+                <span>Title</span>
+                <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Tuesday 18:00 · Studio A" />
+              </label>
+              <label className="ui-field">
+                <span>Studio</span>
+                <select value={studio} onChange={(event) => setStudio(event.target.value)}>
+                  {studioNames.map((studioName) => (
+                    <option key={studioName}>{studioName}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="ui-field">
+                <span>Weekday</span>
+                <select value={weekday} onChange={(event) => setWeekday(event.target.value)}>
+                  {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((day) => (
+                    <option key={day}>{day}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="ui-field">
+                <span>Time</span>
+                <input value={time} onChange={(event) => setTime(event.target.value)} placeholder="18:00 - 19:30" />
+              </label>
+              <label className="wide ui-field">
+                <span>Detail</span>
+                <input value={detail} onChange={(event) => setDetail(event.target.value)} placeholder="Repeats every week" />
+              </label>
+              <label className="wide ui-field">
+                <span>Extra</span>
+                <input value={extra} onChange={(event) => setExtra(event.target.value)} placeholder="Repeat for 8 weeks" />
+              </label>
+              <label className="ui-field">
+                <span>Default fee</span>
+                <input value={fee} onChange={(event) => setFee(event.target.value)} placeholder="300" />
+              </label>
+            </div>
+          </div>
+
+          <div className="sheet-actions">
+            <Button variant="outline" size="sm" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button size="sm" onClick={handleSubmit}>
+              Create template
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -1512,11 +2049,15 @@ function EditorSheet({
   onClose,
   template,
   mode,
+  studios,
+  templates,
 }: {
   open: boolean;
   onClose: () => void;
   template: TemplatePreset | null;
   mode: EditorMode;
+  studios: StudioRecord[];
+  templates: TemplatePreset[];
 }) {
   const editSeed = {
     courseType: "Regular" as const,
@@ -1611,7 +2152,7 @@ function EditorSheet({
         setRepeatEndValue(selected.repeatEndValue);
       }
     }
-  }, [selectedTemplateKey, template]);
+  }, [selectedTemplateKey, template, templates]);
 
   const selectedTemplate = templates.find((item) => item.key === selectedTemplateKey) ?? null;
   const isEditMode = mode === "edit";
@@ -1742,8 +2283,8 @@ function EditorSheet({
                 <label className="ui-field">
                   <span>Studio</span>
                   <select data-testid="edit-studio" value={studio} onChange={(event) => setStudio(event.target.value)}>
-                    {Array.from(new Set(templates.map((item) => item.studio))).map((studioName) => (
-                      <option key={studioName}>{studioName}</option>
+                    {studios.map((studioRecord) => (
+                      <option key={studioRecord.name}>{studioRecord.name}</option>
                     ))}
                   </select>
                 </label>
@@ -2079,6 +2620,12 @@ export function App() {
   const [activeMonthOffset, setActiveMonthOffset] = useState(0);
   const [selectedDate, setSelectedDate] = useState<Date>(initialDate);
   const [moreSection, setMoreSection] = useState<MoreSection>("settings");
+  const [studioRows, setStudioRows] = useState<StudioRecord[]>(initialStudioRows);
+  const [templatePresets, setTemplatePresets] = useState<TemplatePreset[]>(initialTemplates);
+  const [studioDialogOpen, setStudioDialogOpen] = useState(false);
+  const [studioDialogMode, setStudioDialogMode] = useState<"create" | "edit">("create");
+  const [studioDialogStudio, setStudioDialogStudio] = useState<StudioRecord | null>(null);
+  const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [copyPreviewOpen, setCopyPreviewOpen] = useState(false);
@@ -2090,7 +2637,7 @@ export function App() {
   const monthTitle = `${monthNames[data.monthDate.getMonth()]} ${data.monthDate.getFullYear()}`;
   const copyPreviewMonthDate = monthFromOffset(activeMonthOffset - 1);
   const copyPreviewMonthLabel = `${monthNames[copyPreviewMonthDate.getMonth()]} ${copyPreviewMonthDate.getFullYear()}`;
-  const copyPreviewGroups = useMemo(() => groupTemplatesByStudio(), []);
+  const copyPreviewGroups = useMemo(() => groupTemplatesByStudio(templatePresets), [templatePresets]);
 
   const handleToday = () => {
     setActiveMonthOffset(0);
@@ -2117,11 +2664,43 @@ export function App() {
     setEditorOpen(true);
   };
 
-  const handleUseTemplate = (template: TemplatePreset) => {
-    setPage("home");
+  const handleAddStudio = () => {
+    setStudioDialogOpen(true);
+    setStudioDialogMode("create");
+    setStudioDialogStudio(null);
+    setMoreSection("studio");
+    setPage("more");
+  };
+
+  const handleOpenStudio = (studio: StudioRecord) => {
+    setStudioDialogOpen(true);
+    setStudioDialogMode("edit");
+    setStudioDialogStudio(studio);
+    setMoreSection("studio");
+    setPage("more");
+  };
+
+  const handleAddTemplate = () => {
+    setTemplateDialogOpen(true);
     setMoreSection("templates");
-    setEditorTemplate(template);
-    setEditorOpen(true);
+    setPage("more");
+  };
+
+  const handleCreateStudio = (studio: StudioRecord) => {
+    setStudioRows((current) => [...current, studio]);
+  };
+
+  const handleUpdateStudio = (studio: StudioRecord) => {
+    setStudioRows((current) => current.map((row) => (row.id === studio.id ? studio : row)));
+  };
+
+  const handleCreateTemplate = (template: TemplatePreset) => {
+    setTemplatePresets((current) => [...current, template]);
+  };
+
+  const handleUseTemplate = (template: TemplatePreset) => {
+    setMoreSection("templates");
+    openEditor(template, "create");
   };
 
   const openCopyPreview = () => {
@@ -2161,7 +2740,16 @@ export function App() {
         ) : page === "reconcile" ? (
           <ReconcileView />
         ) : (
-          <MorePage section={moreSection} setSection={setMoreSection} onUseTemplate={handleUseTemplate} />
+          <MorePage
+            section={moreSection}
+            setSection={setMoreSection}
+            studios={studioRows}
+            templates={templatePresets}
+            onUseTemplate={handleUseTemplate}
+            onAddStudio={handleAddStudio}
+            onAddTemplate={handleAddTemplate}
+            onOpenStudio={handleOpenStudio}
+          />
         )}
         </MobileFrame>
       <DetailSheet
@@ -2184,6 +2772,20 @@ export function App() {
         }}
       />
       <CopyMonthDialog open={copyPreviewOpen} onClose={() => setCopyPreviewOpen(false)} monthLabel={copyPreviewMonthLabel} groups={copyPreviewGroups} />
+      <StudioDialog
+        open={studioDialogOpen}
+        onClose={() => setStudioDialogOpen(false)}
+        mode={studioDialogMode}
+        studio={studioDialogStudio}
+        onCreate={handleCreateStudio}
+        onUpdate={handleUpdateStudio}
+      />
+      <TemplateDialog
+        open={templateDialogOpen}
+        onClose={() => setTemplateDialogOpen(false)}
+        onCreate={handleCreateTemplate}
+        studioNames={studioRows.map((studio) => studio.name)}
+      />
       <EditorSheet
         open={editorOpen}
         onClose={() => {
@@ -2193,6 +2795,8 @@ export function App() {
         }}
         template={editorTemplate}
         mode={editorMode}
+        studios={studioRows}
+        templates={templatePresets}
       />
     </AppShell>
   );

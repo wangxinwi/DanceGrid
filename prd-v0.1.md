@@ -95,6 +95,7 @@
 - 课时费单位
 - 发薪日
 - 停课补偿比例
+- 排课节数
 - 联系人
 - 电话或微信
 - 备注
@@ -174,6 +175,7 @@ v0.1 支持以下课程类型：
 - fee_unit
 - pay_day
 - cancel_compensation_ratio
+- weekly_session_count
 - contact_name
 - contact_way
 - group_name
@@ -584,4 +586,3 @@ v0.1 支持批量操作，但仅在明确选中范围内执行。
 - 归档与导入导出不进入 v0.1
 - 发薪日异常采用弹窗确认，不做静默修正
 - 图片与文件附件作为后续增强能力，可根据实现成本调整优先级
-
