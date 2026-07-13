@@ -10,5 +10,5 @@ RELEASE_PHASE = "beta"
 [[d1_databases]]
 binding = "DB"
 database_name = "dancegrid_invites"
-database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+database_id = "484a3b2e-7540-4934-b796-3f1cf7adeecd"
 
