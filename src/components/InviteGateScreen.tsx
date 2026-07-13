@@ -10,7 +10,7 @@ const copyByLocale = {
   zh: {
     title: "输入邀请码",
     description:
-      "这是 100 个席位的封闭内测版本。输入收到的邀请码后，会先由 Cloudflare Worker 校验席位，再进入应用。业务数据仍然只保存在本地。",
+      "这是内测版本, 请输入邀请码。",
     field: "邀请码",
     placeholder: "例如 DG-1000-ABCD",
     action: "验证并进入",
@@ -35,6 +35,7 @@ export function InviteGateScreen({ locale, onSubmitInviteCode }: InviteGateScree
   const [inviteCode, setInviteCode] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const showLocalDevHelp = import.meta.env.DEV;
   const copy = copyByLocale[locale];
 
   useEffect(() => {
@@ -81,10 +82,12 @@ export function InviteGateScreen({ locale, onSubmitInviteCode }: InviteGateScree
           </label>
         </div>
 
-        <div className="invite-note">
-          <strong>{copy.helpTitle}</strong>
-          <p>{copy.helpBody}</p>
-        </div>
+        {showLocalDevHelp ? (
+          <div className="invite-note">
+            <strong>{copy.helpTitle}</strong>
+            <p>{copy.helpBody}</p>
+          </div>
+        ) : null}
 
         {message ? <p className="invite-message">{message}</p> : null}
 
