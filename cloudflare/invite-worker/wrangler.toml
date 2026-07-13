@@ -1,0 +1,14 @@
+name = "dancegrid-invite-worker"
+main = "src/index.ts"
+compatibility_date = "2026-07-13"
+minify = true
+
+[vars]
+SEAT_LIMIT = "100"
+RELEASE_PHASE = "beta"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "dancegrid_invites"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+

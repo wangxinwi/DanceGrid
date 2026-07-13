@@ -3,18 +3,25 @@
 This file is the primary instruction source for AI agents working on this repo.
 If anything here conflicts with other notes, `prd-v0.1.md` is the product source of truth.
 
+## Key reference files (read in this order)
+1. `prd-v0.1.md` — Product requirements and business rules
+2. `ARCHITECTURE.md` — Architecture design and implementation roadmap
+3. `AGENTS.md` — This file, development rules
+4. `PRD_UI_GAP_TODO.md` — Current gap between PRD and implementation
+
 ## Project Summary
 
 DanceGrid is a local-first iPhone app for a street dance teacher to record class schedules and reconcile teaching fees.
 
-The product is for single-user use in v0.1. Future multi-user support should be anticipated in data modeling, but not implemented now.
+The product is for single-user use in v0.1. The v0.1 release is a closed beta gated by invite codes and seat validation. Future multi-user support should be anticipated in data modeling, but not implemented now.
 
 ## Read First
 
-Before making changes, read:
+Before making changes, read in order:
 
-1. `prd-v0.1.md`
-2. `AGENTS.md`
+1. `prd-v0.1.md` — Product requirements, business rules, data model
+2. `ARCHITECTURE.md` — Architecture decisions, deployment plan, data layer
+3. `AGENTS.md` — This file, development rules, allowed libraries
 
 If a task touches UI polish, also review the current prototype or screenshots before changing anything.
 
@@ -61,6 +68,7 @@ If a task touches UI polish, also review the current prototype or screenshots be
 - Do not introduce a second UI library unless explicitly requested.
 - Do not introduce a second icon library unless explicitly requested.
 - If a change can be expressed with the current component set, do that instead of inventing a new one.
+- For beta access control, prefer invite-code gating through a lightweight Cloudflare Worker over local PIN locks.
 
 ## Allowed UI / Icon Libraries
 
@@ -158,7 +166,7 @@ Important combinations:
 - Monthly copy of regular classes
 - Reconciliation center
 - Local data storage
-- Local password protection
+- Closed-beta invite-code access control
 
 ### Out of Scope
 
@@ -177,6 +185,7 @@ Important combinations:
 - Use soft delete or archive behavior for stable records when possible.
 - Prefer confirmation before destructive actions.
 - Deletions should warn about affected templates and course instances.
+- Beta access rules are product rules and must stay aligned with `prd-v0.1.md` and `ARCHITECTURE.md`.
 
 ## Monthly Copy Rules
 
@@ -225,12 +234,13 @@ When copying the previous month:
 
 - Any UI change must be self-checked before it is handed back to the user.
 - The self-check should include at minimum:
-  - A successful local build
-  - A review of the changed screen in a browser
-  - A comparison against `AGENTS.md` and `prd-v0.1.md`
+- A successful local build
+- A review of the changed screen in a browser
+- A comparison against `AGENTS.md` and `prd-v0.1.md`
 - Do not claim a UI task is done until the screen has been visually reviewed for hierarchy, spacing, typography, color, and mobile fit.
 - If the build fails or the visual review exposes a mismatch, continue fixing it before replying.
 - When a hook or script reports a self-check reminder, treat it as part of the task, not as optional commentary.
+- For access-control or release-gating changes, also verify the wording against `ARCHITECTURE.md` and the current beta-seat policy.
 
 ## Browser Access Rule
 

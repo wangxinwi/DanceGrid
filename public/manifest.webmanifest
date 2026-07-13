@@ -1,0 +1,24 @@
+{
+  "name": "DanceGrid",
+  "short_name": "DanceGrid",
+  "description": "街舞老师课表记录与课时费对账工具",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#F5F5F5",
+  "theme_color": "#F5F5F5",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

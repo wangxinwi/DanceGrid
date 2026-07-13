@@ -172,9 +172,60 @@
   .reconcile-card,
   .stat-card,
   .sheet-card,
-  .template-summary,
   .repeat-summary {
     @apply rounded-2xl;
+  }
+
+  .invite-gate {
+    @apply flex min-h-screen items-center justify-center px-4 py-8;
+  }
+
+  .invite-card {
+    @apply w-full max-w-[420px] rounded-[24px] border border-slate-200 bg-white p-6 shadow-[0_16px_40px_rgba(15,23,42,0.08)];
+  }
+
+  .invite-card h1 {
+    @apply mt-4 text-[1.6rem] font-semibold tracking-[-0.03em];
+  }
+
+  .invite-card p {
+    @apply mt-2 text-[14px] leading-6 text-slate-500;
+  }
+
+  .invite-fields {
+    @apply mt-6 grid gap-4;
+  }
+
+  .invite-note {
+    @apply mt-5 rounded-[18px] border border-dashed border-slate-200 bg-slate-50 px-4 py-3;
+  }
+
+  .invite-note strong {
+    @apply block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500;
+  }
+
+  .invite-note p {
+    @apply mt-1 text-sm leading-6 text-slate-600;
+  }
+
+  .invite-actions {
+    @apply mt-6 flex justify-end;
+  }
+
+  .invite-message {
+    @apply mt-4 text-sm text-red-700;
+  }
+
+  .weekday-picker {
+    @apply flex flex-wrap gap-2;
+  }
+
+  .weekday-chip {
+    @apply inline-flex h-10 min-w-10 items-center justify-center rounded-full border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 transition;
+  }
+
+  .weekday-chip.is-selected {
+    @apply border-slate-900 bg-slate-900 text-white;
   }
 
   .topbar,
@@ -185,6 +236,22 @@
   .day-timeline-head,
   .reconcile-top {
     @apply flex items-start justify-between gap-3;
+  }
+
+  .reconcile-header {
+    @apply flex items-start justify-between gap-3 rounded-[24px] border border-slate-200 bg-white p-4;
+  }
+
+  .reconcile-header h3 {
+    @apply text-[1.1rem] font-semibold tracking-[-0.02em] text-slate-900;
+  }
+
+  .reconcile-header p {
+    @apply mt-1 max-w-[28rem] text-[12px] leading-5 text-slate-500;
+  }
+
+  .reconcile-nav {
+    @apply flex flex-none items-center gap-2;
   }
 
   .month-nav {
@@ -200,9 +267,17 @@
     @apply flex items-center gap-2;
   }
 
+  .month-header-actions {
+    @apply ml-auto flex items-center gap-2;
+  }
+
   .week-nav,
   .day-nav {
     @apply flex items-center gap-2;
+  }
+
+  .range-action-button {
+    @apply h-9 rounded-full border border-slate-200 bg-white px-3 text-[12px] font-semibold tracking-[0.12em] text-slate-700 shadow-none hover:bg-slate-50;
   }
 
   .month-step {
@@ -272,6 +347,132 @@
     @apply space-y-4;
   }
 
+  .range-list-shell {
+    @apply space-y-3 rounded-[24px] border border-slate-200 bg-white p-3 shadow-none;
+  }
+
+  .range-list-head {
+    @apply flex items-start justify-between gap-3 rounded-[20px] border border-slate-200 bg-slate-50 px-4 py-3;
+  }
+
+  .range-list-head strong {
+    @apply block text-[1rem] font-semibold tracking-[-0.02em] text-slate-900;
+  }
+
+  .range-list-head p {
+    @apply mt-1 text-[12px] leading-5 text-slate-500;
+  }
+
+  .range-list-table {
+    @apply min-w-0 overflow-hidden rounded-[22px] border border-slate-200;
+  }
+
+  .range-list-row {
+    @apply grid w-full grid-cols-[auto_1.05fr_1.45fr_1fr_0.8fr_0.7fr] items-center gap-3 border-b border-slate-200 bg-white px-4 py-3 text-left transition last:border-b-0 hover:bg-slate-50;
+  }
+
+  .range-list-row-head {
+    @apply sticky top-0 z-10 bg-slate-50 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 hover:bg-slate-50;
+  }
+
+  .range-list-row[data-selected="true"] {
+    @apply bg-slate-100;
+  }
+
+  .range-list-row[data-selected="true"]:hover {
+    @apply bg-slate-100;
+  }
+
+  .range-list-select-cell {
+    @apply flex items-center justify-center;
+  }
+
+  .range-list-select-cell input[type="checkbox"] {
+    @apply h-4 w-4 rounded border-slate-300 text-slate-900 accent-slate-900;
+  }
+
+  .range-list-row span {
+    @apply min-w-0;
+  }
+
+  .range-list-date {
+    @apply text-sm font-medium text-slate-700;
+  }
+
+  .range-list-main {
+    @apply flex min-w-0 flex-col gap-1;
+  }
+
+  .range-list-main strong {
+    @apply truncate text-[15px] font-semibold text-slate-900;
+  }
+
+  .range-list-main small {
+    @apply truncate text-[12px] text-slate-500;
+  }
+
+  .range-list-time,
+  .range-list-fee,
+  .range-list-duration {
+    @apply text-sm font-medium text-slate-700;
+  }
+
+  .range-list-fee {
+    @apply font-semibold text-slate-900;
+  }
+
+  .range-summary-shell {
+    @apply rounded-[22px] border border-slate-200 bg-slate-50 p-3;
+  }
+
+  .range-bulk-bar {
+    @apply flex min-w-0 flex-1 items-center justify-end gap-2;
+  }
+
+  .range-bulk-count {
+    @apply shrink-0 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[12px] font-medium text-slate-600;
+  }
+
+  .range-bulk-select {
+    @apply h-8 min-w-[5rem] rounded-full border-slate-300 bg-white px-2 text-[12px] font-semibold text-slate-700 shadow-none;
+  }
+
+  .range-summary-head {
+    @apply flex items-center justify-between gap-3;
+  }
+
+  .range-summary-head strong {
+    @apply text-sm font-semibold text-slate-900;
+  }
+
+  .range-summary-head span {
+    @apply text-[12px] text-slate-500;
+  }
+
+  .range-summary-list {
+    @apply mt-3 grid gap-2;
+  }
+
+  .range-summary-row {
+    @apply grid grid-cols-[1.5fr_auto_auto] items-center gap-3 rounded-[18px] border border-slate-200 bg-white px-3 py-2.5;
+  }
+
+  .range-summary-main {
+    @apply min-w-0;
+  }
+
+  .range-summary-main strong {
+    @apply block truncate text-sm font-semibold text-slate-900;
+  }
+
+  .range-summary-main small {
+    @apply block truncate text-[12px] text-slate-500;
+  }
+
+  .range-summary-stat {
+    @apply text-sm font-semibold text-slate-900;
+  }
+
   .month-grid-wrap {
     @apply rounded-[24px] border border-slate-200 bg-white p-3 shadow-none;
   }
@@ -285,7 +486,7 @@
   }
 
   .day-cell {
-    @apply relative aspect-square overflow-hidden rounded-[16px] border border-slate-200 bg-white p-2 text-left text-sm font-medium text-slate-900 outline-none transition focus-visible:ring-0;
+    @apply relative flex aspect-square items-center justify-center overflow-hidden rounded-[16px] border border-slate-200 bg-white p-2 text-center text-sm font-medium text-slate-900 outline-none transition focus-visible:ring-0;
   }
 
   .day-cell:hover {
@@ -301,7 +502,7 @@
   }
 
   .day-cell.today {
-    @apply border-[2px] border-red-200 bg-white shadow-[0_0_0_1px_rgba(255,255,255,0.9),0_0_0_5px_rgba(255,184,184,0.14),0_0_14px_rgba(255,184,184,0.22)];
+    @apply border-[2px] border-rose-200 bg-white shadow-[0_0_0_1px_rgba(255,255,255,0.88),0_0_0_5px_rgba(251,113,133,0.14),0_0_14px_rgba(251,113,133,0.16)];
   }
 
   .day-cell.selected:not(.today) {
@@ -314,7 +515,7 @@
   }
 
   .day-cell.selected.today {
-    @apply ring-red-400/55;
+    @apply ring-rose-300/60;
   }
 
   .date-number {
@@ -385,12 +586,15 @@
     @apply grid gap-2;
   }
 
+  .summary-strip {
+    @apply grid-cols-2 sm:grid-cols-4;
+  }
+
   .stat-card,
   .reconcile-card,
   .list-row,
   .settings-card,
   .sheet-card,
-  .template-summary,
   .repeat-summary,
   .empty-state,
   .repeat-box {
@@ -401,7 +605,6 @@
   .reconcile-card,
   .settings-card,
   .sheet-card,
-  .template-summary,
   .repeat-summary,
   .repeat-box,
   .empty-state {
@@ -427,6 +630,26 @@
   .repeat-box strong,
   .empty-state strong {
     @apply text-[15px] font-semibold text-slate-900;
+  }
+
+  .reconcile-top small {
+    @apply mt-1 block text-[12px] text-slate-500;
+  }
+
+  .reconcile-top-actions {
+    @apply flex flex-col items-end gap-2;
+  }
+
+  .reconcile-actions-row {
+    @apply flex flex-wrap justify-end gap-2;
+  }
+
+  .reconcile-settle {
+    @apply h-8 rounded-full border-slate-300 px-3 text-[12px] font-semibold text-slate-700;
+  }
+
+  .reconcile-reset {
+    @apply h-8 rounded-full border-slate-300 px-3 text-[12px] font-semibold text-slate-700;
   }
 
   .agenda-list {
@@ -512,27 +735,27 @@
   }
 
   .week-mobile-board {
-    @apply mt-4 space-y-3 rounded-[24px] border border-slate-200 bg-white p-3 shadow-none;
+    @apply mt-4 space-y-3 rounded-[24px] border border-slate-200 bg-[#eef4fa] p-3 shadow-none;
   }
 
   .day-date-strip {
-    @apply grid grid-cols-7 gap-1.5 rounded-[22px] border border-slate-200 bg-white p-2;
+    @apply grid grid-cols-7 gap-1.5 rounded-[22px] border border-slate-200 bg-[#eef4fa] p-2;
   }
 
   .day-date-chip {
-    @apply flex flex-col items-center justify-center rounded-[16px] border border-transparent bg-slate-50 px-2 py-2 text-slate-500 transition;
+    @apply flex min-w-0 flex-col items-center justify-center rounded-[16px] border border-transparent bg-[#e4edf6] px-1.5 py-1.5 text-slate-500 transition;
   }
 
   .day-date-chip strong {
-    @apply text-[12px] font-semibold leading-none;
+    @apply text-[11px] font-semibold leading-none tracking-[-0.01em];
   }
 
   .day-date-chip span {
-    @apply mt-1 text-[16px] font-medium leading-none;
+    @apply mt-0.5 text-[13px] font-medium leading-none;
   }
 
   .day-date-chip.active {
-    @apply border-[#cad8e5] bg-[#f3f7fb] text-slate-900 shadow-[0_1px_2px_rgba(15,23,42,0.05)];
+    @apply border-[#cad8e5] bg-[#dfe9f3] text-slate-900 shadow-[0_1px_2px_rgba(15,23,42,0.05)];
   }
 
   .week-mobile-scroll {
@@ -549,7 +772,7 @@
   }
 
   .week-mobile-time-rail {
-    @apply sticky left-0 z-20 pr-2 pt-[2.7rem] bg-background;
+    @apply sticky left-0 z-20 pr-2 pt-[2.7rem] bg-[#eef4fa];
   }
 
   .week-mobile-time-slot {
@@ -562,11 +785,11 @@
   }
 
   .week-mobile-day-column {
-    @apply relative cursor-pointer overflow-hidden rounded-[20px] border border-slate-200 bg-slate-50 px-2 pb-2 pt-0 shadow-none transition;
+    @apply relative cursor-pointer overflow-hidden rounded-[20px] border border-slate-200 bg-[#e4edf6] px-2 pb-2 pt-0 shadow-none transition;
   }
 
   .week-mobile-day-column.active {
-    @apply border-[#d5dfe9] bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04),0_10px_24px_rgba(15,23,42,0.04)];
+    @apply border-[#d5dfe9] bg-[#dfe9f3] shadow-[0_1px_2px_rgba(15,23,42,0.04),0_10px_24px_rgba(15,23,42,0.04)];
   }
 
   .week-mobile-day-column:focus-visible {
@@ -586,11 +809,11 @@
   }
 
   .week-mobile-day-track {
-    @apply relative min-h-[38rem] rounded-[16px] bg-slate-50;
+    @apply relative min-h-[38rem] rounded-[16px] bg-[#e4edf6];
   }
 
   .week-mobile-day-column.active .week-mobile-day-track {
-    @apply bg-white;
+    @apply bg-[#dfe9f3];
   }
 
   .week-mobile-hour-line {
@@ -750,20 +973,28 @@
     @apply grid gap-3 sm:grid-cols-3;
   }
 
+  .day-date-strip-shell {
+    @apply grid min-w-0 grid-cols-[28px_minmax(0,1fr)_28px] items-center gap-1.5;
+  }
+
+  .day-week-step {
+    @apply !flex !h-8 !w-8 !items-center !justify-center !rounded-full !border !border-slate-300 !bg-white !p-0 !text-slate-700 !shadow-[0_1px_2px_rgba(15,23,42,0.04)] hover:!bg-slate-50;
+  }
+
   .day-date-strip {
-    @apply grid grid-cols-7 gap-1.5 rounded-[22px] border border-slate-200 bg-white p-2;
+    @apply grid min-w-0 flex-1 grid-cols-7 gap-1 rounded-[22px] border border-slate-200 bg-white p-1.5;
   }
 
   .day-date-chip {
-    @apply flex flex-col items-center justify-center rounded-[16px] border border-transparent bg-slate-50 px-2 py-2 text-slate-500 transition;
+    @apply flex min-w-0 flex-col items-center justify-center rounded-[16px] border border-transparent bg-slate-50 px-1 py-1.5 text-slate-500 transition;
   }
 
   .day-date-chip strong {
-    @apply text-[12px] font-semibold leading-none;
+    @apply whitespace-nowrap text-[11px] font-semibold leading-none tracking-[-0.01em];
   }
 
   .day-date-chip span {
-    @apply mt-1 text-[16px] font-medium leading-none;
+    @apply mt-0.5 whitespace-nowrap text-[13px] font-medium leading-none;
   }
 
   .day-date-chip.active {
@@ -821,6 +1052,26 @@
     @apply w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-none outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-300/40;
   }
 
+  .field-with-suffix {
+    @apply flex w-full items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-none transition focus-within:border-slate-400 focus-within:ring-2 focus-within:ring-slate-300/40;
+  }
+
+  .field-with-suffix input {
+    @apply min-w-0 flex-1 border-0 bg-transparent p-0 text-sm text-slate-900 outline-none ring-0 focus:ring-0;
+  }
+
+  .field-with-suffix span {
+    @apply flex-none whitespace-nowrap text-sm font-medium text-slate-500;
+  }
+
+  .static-field {
+    @apply flex min-h-12 items-center rounded-2xl border border-slate-200 bg-slate-50 px-3 text-sm font-medium text-slate-700;
+  }
+
+  .static-field strong {
+    @apply font-medium;
+  }
+
   .alarm-picker {
     @apply grid grid-cols-[1fr_auto_1fr] items-center gap-2;
   }
@@ -857,6 +1108,30 @@
     @apply min-w-0 flex-1;
   }
 
+  .fee-unit-inline {
+    @apply gap-3;
+  }
+
+  .fee-unit-inline input {
+    @apply flex-[1_1_auto];
+  }
+
+  .fee-unit-inline span {
+    @apply flex-none whitespace-nowrap text-sm font-semibold text-slate-500;
+  }
+
+  .percentage-field {
+    @apply px-3;
+  }
+
+  .percentage-field input {
+    @apply border-0 bg-transparent p-0 shadow-none focus:ring-0;
+  }
+
+  .percentage-field span {
+    @apply flex-none text-sm font-medium text-slate-500;
+  }
+
   .form-grid {
     @apply grid grid-cols-2 gap-3;
   }
@@ -886,6 +1161,10 @@
     @apply mt-4 flex items-center justify-end gap-2;
   }
 
+  .submit-error {
+    @apply mt-3 rounded-[18px] border border-red-200 bg-red-50 px-3 py-2 text-sm leading-6 text-red-700;
+  }
+
   .secondary-tabs {
     @apply flex gap-2;
   }
@@ -901,6 +1180,51 @@
   .settings-grid,
   .list-stack {
     @apply grid gap-3;
+  }
+
+  .settings-actions {
+    @apply mt-1 flex flex-wrap gap-2;
+  }
+
+  .settings-toggle {
+    @apply h-9 rounded-full border-slate-300 bg-white px-4 text-[13px] font-medium text-slate-600 shadow-none;
+  }
+
+  .settings-toggle:hover {
+    @apply bg-slate-50 text-slate-900;
+  }
+
+  .settings-toggle.is-selected {
+    @apply z-10 border-[3px] border-slate-950 bg-white text-slate-950 font-semibold shadow-[0_0_0_2px_rgba(15,23,42,0.24),0_4px_12px_rgba(15,23,42,0.12)];
+  }
+
+  .list-row {
+    @apply flex items-start justify-between gap-3 rounded-[22px];
+  }
+
+  .list-row-main {
+    @apply flex min-w-0 flex-1 flex-col gap-1 rounded-[18px] text-left outline-none transition;
+  }
+
+  .list-row-main:disabled {
+    @apply cursor-not-allowed opacity-60;
+  }
+
+  .list-row-main strong {
+    @apply truncate;
+  }
+
+  .list-row-main p,
+  .list-row-main small {
+    @apply truncate;
+  }
+
+  .archive-action {
+    @apply h-8 rounded-full border border-slate-200 bg-white px-3 text-[12px] font-semibold text-slate-700 shadow-none hover:bg-slate-50;
+  }
+
+  .list-row.is-archived {
+    @apply border-dashed bg-slate-50/70;
   }
 
   .metrics {
@@ -986,6 +1310,14 @@
     @apply w-[min(100vw-1.5rem,44rem)] max-h-[90vh] overflow-hidden rounded-[28px] border border-slate-200 bg-white p-0 shadow-[0_24px_64px_rgba(15,23,42,0.09)];
   }
 
+  .detail-dialog {
+    @apply w-[min(100vw-1.5rem,38rem)] max-h-[90vh] overflow-hidden rounded-[28px] border border-slate-200 bg-white p-0 shadow-[0_24px_64px_rgba(15,23,42,0.09)];
+  }
+
+  .detail-scroll {
+    @apply max-h-[78vh] overflow-y-auto px-4 pb-4;
+  }
+
   .copy-preview-shell {
     @apply space-y-4 p-4 pt-0;
   }
@@ -1058,17 +1390,12 @@
     @apply mt-1 text-sm text-slate-500;
   }
 
-  .template-summary .card-content,
   .repeat-summary .card-content {
     @apply px-0 pb-0;
   }
 
   .footer-section {
     @apply mb-0 border-transparent bg-transparent p-0;
-  }
-
-  .template-row {
-    @apply items-start text-left;
   }
 
   .studio-row {
@@ -1183,4 +1510,331 @@
   .nav-item {
     @apply h-11 px-2.5 text-[12px];
   }
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+html.dark body {
+  background: hsl(var(--background));
+}
+
+html.dark .hero-copy,
+html.dark .device,
+html.dark .invite-card,
+html.dark .screen-chrome,
+html.dark .reconcile-header,
+html.dark .settings-card,
+html.dark .list-row,
+html.dark .reconcile-card,
+html.dark .stat-card,
+html.dark .sheet-card,
+html.dark .repeat-summary,
+html.dark .repeat-box,
+html.dark .empty-state,
+html.dark .agenda-row,
+html.dark .day-cell,
+html.dark .week-mobile-day-column,
+html.dark .month-grid,
+html.dark .day-grid,
+html.dark .month-header,
+html.dark .day-header,
+html.dark .day-timeline-head,
+html.dark .reconcile-top,
+html.dark .repeat-toggle,
+html.dark .detail-grid > div {
+  border-color: hsl(var(--border));
+  background: hsl(var(--card));
+}
+
+html.dark .settings-card p,
+html.dark .settings-card small,
+html.dark .invite-card p,
+html.dark .invite-note,
+html.dark .stat-card span,
+html.dark .list-row p,
+html.dark .list-row small,
+html.dark .reconcile-top small,
+html.dark .empty-state p,
+html.dark .agenda-main p,
+html.dark .agenda-main small,
+html.dark .detail-grid span,
+html.dark .ui-field span,
+html.dark .field-hint,
+html.dark .section-label,
+html.dark .eyebrow,
+html.dark .lead,
+html.dark .status-bar {
+  color: hsl(var(--muted-foreground));
+}
+
+html.dark .settings-card strong,
+html.dark .stat-card strong,
+html.dark .list-row strong,
+html.dark .reconcile-top strong,
+html.dark .empty-state strong,
+html.dark .repeat-box strong,
+html.dark .invite-note strong,
+html.dark .day-header h3,
+html.dark .month-header h3,
+html.dark .day-timeline-head h3,
+html.dark .page-topbar h3,
+html.dark .section-head h3,
+html.dark .invite-card h1 {
+  color: hsl(var(--foreground));
+}
+
+html.dark .weekday-chip,
+html.dark .chip,
+html.dark .archive-action,
+html.dark .toolbar-link,
+html.dark .settings-card .button-outline,
+html.dark .secondary-tabs .chip {
+  background: hsl(var(--secondary));
+  color: hsl(var(--secondary-foreground));
+  border-color: hsl(var(--border));
+}
+
+html.dark .invite-note {
+  background: hsl(var(--muted));
+  border-color: hsl(var(--border));
+}
+
+html.dark .invite-message {
+  color: hsl(0 84% 60%);
+}
+
+html.dark .settings-toggle {
+  background: hsl(var(--card));
+  color: hsl(var(--muted-foreground));
+  border-color: hsl(var(--border));
+}
+
+html.dark .settings-toggle:hover {
+  background: hsl(var(--accent));
+  color: hsl(var(--foreground));
+  border-color: hsl(var(--foreground) / 0.28);
+}
+
+html.dark .settings-toggle.is-selected {
+  background: hsl(var(--card));
+  color: hsl(var(--foreground));
+  border-width: 2px;
+  border-color: hsl(var(--foreground));
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+html.dark .settings-actions {
+  background: hsl(var(--card));
+  border-color: hsl(var(--border));
+}
+
+html.dark .mobile-bottom-nav {
+  background: hsl(var(--card));
+  border-color: hsl(var(--border));
+}
+
+html.dark .nav-item {
+  color: hsl(var(--muted-foreground));
+}
+
+html.dark .nav-item.active {
+  background: hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
+}
+
+html.dark .view-tabs [data-state="active"] {
+  background: hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
+}
+
+html.dark .toolbar-link,
+html.dark .month-step,
+html.dark .week-step,
+html.dark .today-link,
+html.dark .week-reset,
+html.dark .day-reset,
+html.dark .reconcile-reset,
+html.dark .layout-toggle {
+  background: hsl(var(--secondary)) !important;
+  color: hsl(var(--secondary-foreground)) !important;
+  border-color: hsl(var(--border)) !important;
+}
+
+html.dark .weekday-chip.is-selected,
+html.dark .chip.active {
+  background: hsl(var(--primary)) !important;
+  border-color: hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
+}
+
+html.dark .agenda-row:hover,
+html.dark .list-row:hover,
+html.dark .chip:hover,
+html.dark .archive-action:hover,
+html.dark .weekday-chip:hover {
+  background: hsl(var(--accent));
+}
+
+html.dark .submit-error {
+  background: hsl(0 62% 20% / 0.28);
+  border-color: hsl(0 62% 45% / 0.45);
+  color: hsl(0 100% 92%);
+}
+
+html.dark .month-grid-wrap {
+  background: hsl(var(--card));
+}
+
+html.dark .range-list-shell,
+html.dark .range-list-head,
+html.dark .range-list-table,
+html.dark .range-summary-shell,
+html.dark .range-list-row,
+html.dark .range-summary-row {
+  border-color: hsl(var(--border));
+}
+
+html.dark .range-list-shell,
+html.dark .range-list-row,
+html.dark .range-summary-row {
+  background: hsl(var(--card));
+}
+
+html.dark .range-list-head,
+html.dark .range-summary-shell,
+html.dark .range-list-row-head {
+  background: hsl(var(--secondary));
+}
+
+html.dark .range-list-row[data-selected="true"],
+html.dark .range-list-row[data-selected="true"]:hover {
+  background: hsl(217 33% 20%);
+}
+
+html.dark .range-list-select-cell input[type="checkbox"] {
+  accent-color: hsl(var(--primary));
+}
+
+html.dark .range-list-head p,
+html.dark .range-summary-head span,
+html.dark .range-summary-main small,
+html.dark .range-list-head p,
+html.dark .range-list-main small {
+  color: hsl(var(--muted-foreground));
+}
+
+html.dark .range-list-head strong,
+html.dark .range-summary-head strong,
+html.dark .range-list-date,
+html.dark .range-list-time,
+html.dark .range-list-duration,
+html.dark .range-summary-stat {
+  color: hsl(var(--foreground));
+}
+
+html.dark .range-list-fee,
+html.dark .range-summary-main strong,
+html.dark .range-list-main strong {
+  color: hsl(var(--foreground));
+}
+
+html.dark .weekday-row {
+  color: hsl(var(--muted-foreground));
+}
+
+html.dark .day-cell {
+  background: hsl(var(--secondary));
+  color: hsl(var(--foreground));
+  border-color: hsl(var(--border));
+}
+
+html.dark .day-cell:hover {
+  background: hsl(var(--accent));
+}
+
+html.dark .day-cell.muted {
+  background: hsl(var(--muted));
+  color: hsl(var(--muted-foreground));
+}
+
+html.dark .day-cell.weekend {
+  background: hsl(var(--secondary) / 0.82);
+}
+
+html.dark .day-cell.today {
+  background: hsl(216 39% 22%);
+  color: hsl(var(--foreground));
+  border-color: hsl(0 0% 100% / 0.82);
+  box-shadow: 0 0 0 1px hsl(0 0% 100% / 0.82), 0 0 0 5px hsl(0 0% 100% / 0.1), 0 0 14px hsl(0 0% 100% / 0.1);
+}
+
+html.dark .day-cell.selected:not(.today),
+html.dark .day-cell.selected.today {
+  background: hsl(212 72% 59% / 0.16);
+  color: hsl(var(--foreground));
+  border-color: hsl(212 72% 59% / 0.55);
+}
+
+html.dark .date-number {
+  color: inherit;
+}
+
+html.dark .day-count-badge {
+  background: hsl(215 22% 24% / 0.96);
+  color: hsl(var(--foreground));
+}
+
+html.dark .week-mobile-board,
+html.dark .day-timeline-track,
+html.dark .day-date-strip {
+  background: hsl(216 39% 18%);
+}
+
+html.dark .day-date-strip-shell {
+  background: transparent;
+}
+
+html.dark .week-mobile-time-rail {
+  background: hsl(216 39% 18%);
+}
+
+html.dark .week-mobile-day-column,
+html.dark .day-date-chip {
+  background: hsl(216 39% 21%);
+  color: hsl(var(--foreground));
+}
+
+html.dark .week-mobile-day-column.active,
+html.dark .day-date-chip.active {
+  background: hsl(216 39% 24%);
+  color: hsl(var(--foreground));
+  border-color: hsl(0 0% 100% / 0.14);
+}
+
+html.dark .week-mobile-day-track {
+  background: hsl(216 39% 20%);
+}
+
+html.dark .week-mobile-day-column.active .week-mobile-day-track {
+  background: hsl(216 39% 23%);
+}
+
+html.dark .week-mobile-day-column-head {
+  background: linear-gradient(to bottom, hsl(216 39% 22%), hsl(216 39% 22% / 0.92));
+}
+
+html.dark .week-mobile-time-slot,
+html.dark .week-mobile-hour-line {
+  border-color: hsl(214 28% 42% / 0.55);
+}
+
+html.dark .week-mobile-time-rail,
+html.dark .week-mobile-day-column-head,
+html.dark .week-mobile-day-column-head strong,
+html.dark .week-mobile-day-column-head span,
+html.dark .day-date-chip strong,
+html.dark .day-date-chip span {
+  color: hsl(var(--foreground));
 }

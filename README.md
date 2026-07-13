@@ -19,7 +19,8 @@ DanceGrid v0.1 is designed around these core workflows:
 - Monthly copy of regular classes
 - Reconciliation center
 - Local data storage
-- Local password protection
+- Closed-beta invite-code access control via Cloudflare Worker
+- Cloudflare Pages static deployment path for the PWA
 
 ## Product Rules
 
@@ -35,6 +36,7 @@ The project follows these constraints from `prd-v0.1.md` and `AGENTS.md`:
 - No automatic archiving
 - No complex analytics dashboards
 - No online attachment processing
+- No local PIN gate for the beta entry flow
 
 ## Current Prototype
 
@@ -82,4 +84,3 @@ npm run preview
 - Read `AGENTS.md` before making repo changes.
 - Keep history traceable and avoid broadening scope beyond v0.1.
 - Prefer explicit, reviewable changes over clever abstractions.
-
