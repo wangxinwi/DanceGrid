@@ -2903,7 +2903,7 @@ function DetailSheet({
                 <div><span>{getLocalizedValue(locale, "工作室", "Studio")}</span><strong>{studio?.name ?? record.studio}</strong></div>
                 <div><span>{getLocalizedValue(locale, "内容", "Content")}</span><strong>{record.contentTag || record.title}</strong></div>
                 <div><span>{getLocalizedValue(locale, "内容说明", "Content description")}</span><strong>{record.contentDescription || getLocalizedValue(locale, "未设置", "Not set")}</strong></div>
-                <div><span>{getLocalizedValue(locale, "离场", "Departure")}</span><strong>{record.departureMinutes} {getLocalizedValue(locale, "分钟", "min")}</strong></div>
+                <div><span>{getLocalizedValue(locale, "提前出发时间", "Departure")}</span><strong>{record.departureMinutes} {getLocalizedValue(locale, "分钟", "min")}</strong></div>
                 <div><span>{getLocalizedValue(locale, "应收", "Receivable")}</span><strong>{formatCurrency(getRecordFeeValue(record))}</strong></div>
                 <div><span>{getLocalizedValue(locale, "已收", "Received")}</span><strong>{formatCurrency(getRecordReceivedValue(record))}</strong></div>
                 <div><span>{getLocalizedValue(locale, "预计应收", "Expected receivable")}</span><strong>{formatCurrency(parseNumericValue(record.actualReceivableAmount) || getRecordFeeValue(record))}</strong></div>
@@ -3483,7 +3483,7 @@ function EditorSheet({
                       <input type="text" value={actualReceivedAmount} onChange={(event) => setActualReceivedAmount(event.target.value)} placeholder={getLocalizedValue(locale, "可选", "Optional")} />
                     </label>
                     <label className="ui-field">
-                      <span>{getLocalizedValue(locale, "离场分钟数", "Departure minutes")}</span>
+                      <span>{getLocalizedValue(locale, "提前出发时间", "Departure minutes")}</span>
                       <input type="number" min="0" value={departureMinutes} onChange={(event) => setDepartureMinutes(event.target.value)} />
                     </label>
                     <label className="ui-field">
